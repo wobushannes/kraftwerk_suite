@@ -12,7 +12,7 @@ Der Fehler `"Der Befehl 'vite' konnte nicht gefunden werden"` tritt auf, wenn di
 ### 1. Projekt-Verzeichnis im Terminal öffnen
 Öffnen Sie Ihre Eingabeaufforderung (CMD), Anaconda Prompt oder PowerShell und wechseln Sie in Ihr Projektverzeichnis (wo diese `package.json`-Datei liegt):
 ```bash
-cd K:\python\scripte\crm\web
+cd \crm\web
 ```
 
 ### 2. Module installieren (Zwingend notwendig!)
