@@ -1,5 +1,3 @@
-# LE Consulting - Offline CRM Portal (Lokale Einrichtung)
-
 Dieses Portal ist so konzipiert, dass es vollständig auf Ihrem eigenen Computer läuft. Da alle Berechnungen und Datenverläufe lokal in Ihrem Webbrowser (über den sogenannten `localStorage`) verschlüsselt gespeichert werden, wird keine fremde Cloud oder Datenbank benötigt.
 
 Hier ist die einfache Schritt-für-Schritt-Anleitung, um die Anwendung lokal zu starten:
