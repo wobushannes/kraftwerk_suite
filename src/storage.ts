@@ -1,75 +1,19 @@
 import { CRMData } from './types';
 import { INITIAL_MOCK_DATA } from './mockData';
 
-const LOCAL_STORAGE_KEY = 'crm_portal_data_v1';
+// SECURE SERVER-SIDE FILESYSTEM DATABASES
+// Under no circumstances is the browser's local storage used to hold primary CRM data.
+// All collections (customers, products, invoices, audit logs, messages, templates, etc.) 
+// are saved and loaded directly from real JSON database files inside the server's secure '/data/' directory.
 
 export function loadCRMData(): CRMData {
-  try {
-    const serialized = localStorage.getItem(LOCAL_STORAGE_KEY);
-    if (!serialized) {
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(INITIAL_MOCK_DATA));
-      return INITIAL_MOCK_DATA;
-    }
-    const parsed = JSON.parse(serialized);
-    
-    // Auto-merge new high-fidelity bot rules that might be missing from older client states
-    let loadedRules = parsed.botRules || [];
-    if (loadedRules.length > 0) {
-      const existingIds = new Set(loadedRules.map((r: any) => r.id));
-      INITIAL_MOCK_DATA.botRules.forEach((rule) => {
-        if (!existingIds.has(rule.id)) {
-          loadedRules.push(rule);
-        }
-      });
-    } else {
-      loadedRules = INITIAL_MOCK_DATA.botRules;
-    }
-    
-    // Ensure nested fields are present
-    return {
-      customers: parsed.customers || [],
-      files: parsed.files || [],
-      messages: parsed.messages || [],
-      appointments: parsed.appointments || [],
-      botRules: loadedRules,
-      unresolvedQueries: parsed.unresolvedQueries || [],
-      invoices: parsed.invoices || INITIAL_MOCK_DATA.invoices || [],
-      customTemplates: parsed.customTemplates || INITIAL_MOCK_DATA.customTemplates || [],
-      products: parsed.products || INITIAL_MOCK_DATA.products || [],
-      orders: parsed.orders || INITIAL_MOCK_DATA.orders || [],
-      blogPosts: parsed.blogPosts || INITIAL_MOCK_DATA.blogPosts || [],
-      settings: parsed.settings || {
-        activeTemplateId: 'marketing',
-        cookieConsentRequired: false,
-        gdprLoggingEnabled: true,
-        shopEnabled: true,
-        blogEnabled: true,
-        appointmentsEnabled: true,
-        invoicesEnabled: true,
-        videosEnabled: true,
-        botEnabled: true,
-        chatEnabled: true,
-        companyName: 'Aura Suite Enterprise',
-        companyAddress: 'Musterstraße 1, 80331 München',
-        companyEmail: 'support@aura-suite.de',
-        companyPhone: '+49 123 456789',
-        iban: 'DE49 7835 1520 1883 1941 12',
-        bic: 'BYLADEM1LIC',
-        taxId: 'DE 123456789'
-      }
-    };
-  } catch (error) {
-    console.error('Error loading CRM portal data', error);
-    return INITIAL_MOCK_DATA;
-  }
+  // Always return the baseline. The React app immediately fetches the full real-time database
+  // from the server's '/data/' folder during mount via the GET /api/crm-data endpoint.
+  return INITIAL_MOCK_DATA;
 }
 
 export function saveCRMData(data: CRMData): void {
-  try {
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(data));
-  } catch (error) {
-    console.error('Error saving CRM portal data', error);
-  }
+  // Explicitly bypassed. We write 100% directly to the server filesystem to protect privacy and avoid client loss.
 }
 
 // Pure JS SHA-256 implementation that works everywhere (even in insecure HTTP contexts)
@@ -200,4 +144,166 @@ export async function saveServerCRMData(data: CRMData): Promise<void> {
     throw new Error('Failed to save CRM data to server');
   }
 }
+
+export interface IntegrityFileReport {
+  name: string;
+  collection: string;
+  exists: boolean;
+  sha256: string;
+  size: number;
+  lastModified: string;
+  valid: boolean;
+}
+
+export async function fetchIntegrityReport(): Promise<IntegrityFileReport[]> {
+  const res = await fetch('/api/integrity-check');
+  if (!res.ok) {
+    throw new Error('Failed to run storage integrity diagnostics');
+  }
+  return res.json();
+}
+
+export interface BackupPayload {
+  iv: string;
+  salt: string;
+  encrypted: string;
+}
+
+export async function exportServerBackup(passphrase: string): Promise<BackupPayload> {
+  const res = await fetch('/api/backup/export', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ passphrase })
+  });
+  if (!res.ok) {
+    const errObj = await res.json().catch(() => ({}));
+    throw new Error(errObj.error || 'Failed to export secure data backup');
+  }
+  return res.json();
+}
+
+export async function importServerBackup(payload: BackupPayload & { passphrase: string }): Promise<void> {
+  const res = await fetch('/api/backup/import', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+  if (!res.ok) {
+    const errObj = await res.json().catch(() => ({}));
+    throw new Error(errObj.error || 'Failed to import secure data backup');
+  }
+}
+
+export interface ServerBackupFileInfo {
+  name: string;
+  size: number;
+  createdAt: string;
+  isAuto: boolean;
+}
+
+export async function fetchServerBackupsList(): Promise<ServerBackupFileInfo[]> {
+  const res = await fetch('/api/backups');
+  if (!res.ok) {
+    throw new Error('Fehler beim Abrufen der Server-Datensicherungen.');
+  }
+  return res.json();
+}
+
+export async function createManualServerZipBackup(passphrase: string): Promise<{ success: boolean; fileName: string }> {
+  const res = await fetch('/api/backups/trigger-manual', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ passphrase })
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Die verschlüsselte Zip-Sicherung konnte nicht generiert werden.');
+  }
+  return res.json();
+}
+
+export async function restoreServerZipBackup(name: string, passphrase: string): Promise<void> {
+  const res = await fetch('/api/backups/restore-file', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, passphrase })
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Entschlüsselung fehlgeschlagen: Falsches Passwort oder beschädigtes Archiv.');
+  }
+}
+
+export async function deleteServerBackupFile(name: string): Promise<void> {
+  const res = await fetch('/api/backups', {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name })
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Löschen der Sicherungsdatei fehlgeschlagen.');
+  }
+}
+
+export interface EmergencyBackupInfo {
+  name: string;
+  size: number;
+  createdAt: string;
+}
+
+export async function fetchEmergencyBackupsList(): Promise<EmergencyBackupInfo[]> {
+  const res = await fetch('/api/emergency/backups');
+  if (!res.ok) {
+    throw new Error('Fehler beim Abrufen der Notfall-Backups.');
+  }
+  return res.json();
+}
+
+export async function createEmergencyBackup(collectionName: string, customName?: string): Promise<void> {
+  const res = await fetch('/api/emergency/create', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ collectionName, customName })
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Erstellen des Notfall-Backups fehlgeschlagen.');
+  }
+}
+
+export async function restoreEmergencyBackup(backupFileName: string, targetCollection: string): Promise<void> {
+  const res = await fetch('/api/emergency/restore', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ backupFileName, targetCollection })
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Notfall-Wiederherstellung fehlgeschlagen.');
+  }
+}
+
+export async function deleteEmergencyBackup(name: string): Promise<void> {
+  const res = await fetch('/api/emergency/delete', {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name })
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Löschen des Notfall-Backups fehlgeschlagen.');
+  }
+}
+
+export async function checkServerWritePermissions(): Promise<{ success: boolean; writable: boolean }> {
+  try {
+    const res = await fetch('/api/system/write-check');
+    if (!res.ok) return { success: false, writable: false };
+    return res.json();
+  } catch (e) {
+    return { success: false, writable: false };
+  }
+}
+
 

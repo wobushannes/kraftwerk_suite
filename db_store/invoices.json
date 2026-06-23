@@ -1,0 +1,517 @@
+[
+  {
+    "id": "inv-1",
+    "invoiceNumber": "RE-2026-001",
+    "customerId": "cust-max",
+    "customerName": "Max Mustermann",
+    "amount": 1190,
+    "taxAmount": 190,
+    "netAmount": 1000,
+    "taxRate": 19,
+    "issueDate": "2026-05-15",
+    "dueDate": "2026-06-15",
+    "status": "Bezahlt",
+    "description": "CMS System-Setup & CRM-Integration",
+    "paymentMethod": "Überweisung",
+    "paidAt": "2026-05-18",
+    "items": [
+      {
+        "id": "item-1",
+        "description": "Strukturierte Bedarfsanalyse und Migrationstests nach modernem CMS-Standard",
+        "quantity": 1,
+        "unitPrice": 1000,
+        "total": 1000
+      }
+    ]
+  },
+  {
+    "id": "inv-2",
+    "invoiceNumber": "RE-2026-002",
+    "customerId": "cust-max",
+    "customerName": "Max Mustermann",
+    "amount": 345.1,
+    "taxAmount": 55.1,
+    "netAmount": 290,
+    "taxRate": 19,
+    "issueDate": "2026-05-28",
+    "dueDate": "2026-06-28",
+    "status": "Bezahlt",
+    "description": "Core-Modul Customization & API-Audit",
+    "paymentMethod": "Überweisung",
+    "paidAt": "2026-06-02",
+    "items": [
+      {
+        "id": "item-2",
+        "description": "Sicherheits-Auditierung & API-Protokolle inkl. Entwickler-Einführung",
+        "quantity": 1,
+        "unitPrice": 290,
+        "total": 290
+      }
+    ]
+  },
+  {
+    "id": "inv-3",
+    "invoiceNumber": "RE-2026-003",
+    "customerId": "cust-anna",
+    "customerName": "Anna Schmidt",
+    "amount": 595,
+    "taxAmount": 95,
+    "netAmount": 500,
+    "taxRate": 19,
+    "issueDate": "2026-05-10",
+    "dueDate": "2026-05-24",
+    "status": "Überfällig",
+    "description": "Medienproduktion: Onboarding Video-Schnitt & Sound",
+    "paymentMethod": "Überweisung",
+    "items": [
+      {
+        "id": "item-3",
+        "description": "Schnitt & Postproduction Social-Media Recruitment-Video (45s)",
+        "quantity": 1,
+        "unitPrice": 500,
+        "total": 500
+      }
+    ]
+  },
+  {
+    "id": "inv-4",
+    "invoiceNumber": "RE-2026-004",
+    "customerId": "cust-julia",
+    "customerName": "Julia Kaiser",
+    "amount": 1428,
+    "taxAmount": 228,
+    "netAmount": 1200,
+    "taxRate": 19,
+    "issueDate": "2026-06-01",
+    "dueDate": "2026-06-15",
+    "status": "Bezahlt",
+    "description": "UI/UX High-End Konzeption & Templatebau",
+    "paymentMethod": "Kreditkarte",
+    "paidAt": "2026-06-01",
+    "items": [
+      {
+        "id": "item-4",
+        "description": "Entwicklung von 3 individuellen Portal-Designs und Vektor-Satz",
+        "quantity": 1,
+        "unitPrice": 1200,
+        "total": 1200
+      }
+    ]
+  },
+  {
+    "id": "inv-5",
+    "invoiceNumber": "RE-2026-005",
+    "customerId": "cust-stefan",
+    "customerName": "Stefan Becker",
+    "amount": 1059.1,
+    "taxAmount": 169.1,
+    "netAmount": 890,
+    "taxRate": 19,
+    "issueDate": "2026-06-02",
+    "dueDate": "2026-07-02",
+    "status": "Offen",
+    "description": "Edge-Infrastruktur Bereitstellung & Token-Satz",
+    "paymentMethod": "Überweisung",
+    "items": [
+      {
+        "id": "item-5",
+        "description": "Vorkonfiguration Edge Mini Server und Übergabe von 5 registrierten YubiKeys",
+        "quantity": 1,
+        "unitPrice": 890,
+        "total": 890
+      }
+    ]
+  },
+  {
+    "id": "inv-6",
+    "invoiceNumber": "RE-2026-006",
+    "customerId": "cust-melanie",
+    "customerName": "Melanie Fischer",
+    "amount": 1783.81,
+    "taxAmount": 284.81,
+    "netAmount": 1499,
+    "taxRate": 19,
+    "issueDate": "2026-06-03",
+    "dueDate": "2026-06-17",
+    "status": "Bezahlt",
+    "description": "Aura Suite Enterprise Jahreslizenz-Nutzung",
+    "paymentMethod": "Kreditkarte",
+    "paidAt": "2026-06-03",
+    "items": [
+      {
+        "id": "item-6",
+        "description": "Nutzungsgebühr für 12 Monate vollumfänglichen Enterprise Core Support",
+        "quantity": 1,
+        "unitPrice": 1499,
+        "total": 1499
+      }
+    ]
+  },
+  {
+    "id": "inv-7",
+    "invoiceNumber": "RE-2026-007",
+    "customerId": "cust-christian",
+    "customerName": "Christian Hoffmann",
+    "amount": 153.51,
+    "taxAmount": 24.51,
+    "netAmount": 129,
+    "taxRate": 19,
+    "issueDate": "2026-06-05",
+    "dueDate": "2026-06-19",
+    "status": "Bezahlt",
+    "description": "Cloud Sync Connector Ersteinrichtung",
+    "paymentMethod": "PayPal",
+    "paidAt": "2026-06-05",
+    "items": [
+      {
+        "id": "item-7",
+        "description": "Lizenzschlüssel Aura Hybrid Cloud Sync Module inklusive Integrations-Hilfe",
+        "quantity": 1,
+        "unitPrice": 129,
+        "total": 129
+      }
+    ]
+  },
+  {
+    "id": "inv-8",
+    "invoiceNumber": "RE-2026-008",
+    "customerId": "cust-sarah",
+    "customerName": "Sarah Wagner",
+    "amount": 224.91,
+    "taxAmount": 35.91,
+    "netAmount": 189,
+    "taxRate": 19,
+    "issueDate": "2026-06-08",
+    "dueDate": "2026-06-22",
+    "status": "Bezahlt",
+    "description": "Marketing & Newsletter Add-on Integration",
+    "paymentMethod": "PayPal",
+    "paidAt": "2026-06-09",
+    "items": [
+      {
+        "id": "item-8",
+        "description": "Kombilizenz für systemweiten Newsletter-Ersteller und E-Mail-Templates",
+        "quantity": 1,
+        "unitPrice": 189,
+        "total": 189
+      }
+    ]
+  },
+  {
+    "id": "inv-9",
+    "invoiceNumber": "RE-2026-009",
+    "customerId": "cust-michael",
+    "customerName": "Michael Bauer",
+    "amount": 415.31,
+    "taxAmount": 66.31,
+    "netAmount": 349,
+    "taxRate": 19,
+    "issueDate": "2026-06-10",
+    "dueDate": "2026-06-24",
+    "status": "Bezahlt",
+    "description": "Installation Video-Encoder Portal",
+    "paymentMethod": "Überweisung",
+    "paidAt": "2026-06-12",
+    "items": [
+      {
+        "id": "item-9",
+        "description": "Skalierbare MP4 Transkodierungs-Bridge & Frontend Medienspieler",
+        "quantity": 1,
+        "unitPrice": 349,
+        "total": 349
+      }
+    ]
+  },
+  {
+    "id": "inv-10",
+    "invoiceNumber": "RE-2026-010",
+    "customerId": "cust-laura",
+    "customerName": "Laura Richter",
+    "amount": 472.43,
+    "taxAmount": 75.43,
+    "netAmount": 397,
+    "taxRate": 19,
+    "issueDate": "2026-06-11",
+    "dueDate": "2026-06-25",
+    "status": "Offen",
+    "description": "Physical Security Box & Token-Satz",
+    "paymentMethod": "Überweisung",
+    "items": [
+      {
+        "id": "item-10",
+        "description": "Safe-Storage 1TB Hardware SSD und 2 YubiKeys zur lokalen Wiederherstellung",
+        "quantity": 1,
+        "unitPrice": 397,
+        "total": 397
+      }
+    ]
+  },
+  {
+    "id": "inv-11",
+    "invoiceNumber": "RE-2026-011",
+    "customerId": "cust-sandra",
+    "customerName": "Sandra Meier",
+    "amount": 296.31,
+    "taxAmount": 47.31,
+    "netAmount": 249,
+    "taxRate": 19,
+    "issueDate": "2026-06-12",
+    "dueDate": "2026-06-26",
+    "status": "Bezahlt",
+    "description": "Digital Signature Tool-Satz",
+    "paymentMethod": "Kreditkarte",
+    "paidAt": "2026-06-12",
+    "items": [
+      {
+        "id": "item-11",
+        "description": "Installation sicherer digitaler Dokumenten-Signaturen mit eIDAS Validierung",
+        "quantity": 1,
+        "unitPrice": 249,
+        "total": 249
+      }
+    ]
+  },
+  {
+    "id": "inv-12",
+    "invoiceNumber": "RE-2026-012",
+    "customerId": "cust-dennis",
+    "customerName": "Dennis Schmitz",
+    "amount": 341.91,
+    "taxAmount": 52.91,
+    "netAmount": 289,
+    "taxRate": 19,
+    "issueDate": "2026-06-15",
+    "dueDate": "2026-06-29",
+    "status": "Bezahlt",
+    "description": "Booking Pro Kalender Upgrade",
+    "paymentMethod": "PayPal",
+    "paidAt": "2026-06-16",
+    "items": [
+      {
+        "id": "item-12",
+        "description": "Client Termin-Modul inklusive E-Mail-Erinnerungsautomat",
+        "quantity": 1,
+        "unitPrice": 289,
+        "total": 289
+      }
+    ]
+  },
+  {
+    "id": "inv-13",
+    "invoiceNumber": "RE-2026-013",
+    "customerId": "cust-elena",
+    "customerName": "Elena Petrov",
+    "amount": 189.21,
+    "taxAmount": 30.21,
+    "netAmount": 159,
+    "taxRate": 19,
+    "issueDate": "2026-06-16",
+    "dueDate": "2026-06-30",
+    "status": "Bezahlt",
+    "description": "Lexoffice Steuerdaten Bridge",
+    "paymentMethod": "Überweisung",
+    "paidAt": "2026-06-18",
+    "items": [
+      {
+        "id": "item-13",
+        "description": "Automatisierter JSON-Exporter für Erlöskonten",
+        "quantity": 1,
+        "unitPrice": 159,
+        "total": 159
+      }
+    ]
+  },
+  {
+    "id": "inv-14",
+    "invoiceNumber": "RE-2026-014",
+    "customerId": "cust-philipp",
+    "customerName": "Philipp Voigt",
+    "amount": 973.42,
+    "taxAmount": 155.42,
+    "netAmount": 818,
+    "taxRate": 19,
+    "issueDate": "2026-06-18",
+    "dueDate": "2026-07-02",
+    "status": "Offen",
+    "description": "Shop Core Setup & WhatsApp Messenger-Bot Integration",
+    "paymentMethod": "PayPal",
+    "items": [
+      {
+        "id": "item-14",
+        "description": "Komplette E-Commerce Produktübersichten & konfigurierbare WhatsApp API",
+        "quantity": 1,
+        "unitPrice": 818,
+        "total": 818
+      }
+    ]
+  },
+  {
+    "id": "inv-15",
+    "invoiceNumber": "RE-2026-015",
+    "customerId": "cust-jan",
+    "customerName": "Jan Schulze",
+    "amount": 272.51,
+    "taxAmount": 43.51,
+    "netAmount": 229,
+    "taxRate": 19,
+    "issueDate": "2026-06-19",
+    "dueDate": "2026-07-03",
+    "status": "Offen",
+    "description": "Team Workforce Planungstool",
+    "paymentMethod": "Überweisung",
+    "items": [
+      {
+        "id": "item-15",
+        "description": "Zeiterfassungs-Lizenz für 10 Außendienst-Mitarbeiter im Portal",
+        "quantity": 1,
+        "unitPrice": 229,
+        "total": 229
+      }
+    ]
+  },
+  {
+    "id": "inv-16",
+    "invoiceNumber": "RE-2026-016",
+    "customerId": "cust-sabine",
+    "customerName": "Sabine Frank",
+    "amount": 201.11,
+    "taxAmount": 32.11,
+    "netAmount": 169,
+    "taxRate": 19,
+    "issueDate": "2026-06-20",
+    "dueDate": "2026-07-04",
+    "status": "Offen",
+    "description": "B2B Lead Booster Einpflegung",
+    "paymentMethod": "Kreditkarte",
+    "items": [
+      {
+        "id": "item-16",
+        "description": "Integriertes Lead-Erfassungs-Widget zur vollautomatisierten Akquise",
+        "quantity": 1,
+        "unitPrice": 169,
+        "total": 169
+      }
+    ]
+  },
+  {
+    "id": "inv-17",
+    "invoiceNumber": "RE-2026-017",
+    "customerId": "cust-patrick",
+    "customerName": "Patrick Lehmann",
+    "amount": 117.81,
+    "taxAmount": 18.81,
+    "netAmount": 99,
+    "taxRate": 19,
+    "issueDate": "2026-06-21",
+    "dueDate": "2026-07-05",
+    "status": "Bezahlt",
+    "description": "Multilingual DeepL Translation Integration",
+    "paymentMethod": "PayPal",
+    "paidAt": "2026-06-21",
+    "items": [
+      {
+        "id": "item-17",
+        "description": "Freischaltung europäischer Echtzeit-Übersetzungsmodule",
+        "quantity": 1,
+        "unitPrice": 99,
+        "total": 99
+      }
+    ]
+  },
+  {
+    "id": "inv-18",
+    "invoiceNumber": "RE-2026-018",
+    "customerId": "cust-verena",
+    "customerName": "Verena Schuster",
+    "amount": 105.91,
+    "taxAmount": 16.91,
+    "netAmount": 89,
+    "taxRate": 19,
+    "issueDate": "2026-06-22",
+    "dueDate": "2026-07-06",
+    "status": "Offen",
+    "description": "Cloud Vault Backup Platz",
+    "paymentMethod": "Überweisung",
+    "items": [
+      {
+        "id": "item-18",
+        "description": "100GB exklusiver, verschlüsselter Cloud-Festplattenspeicher in Frankfurt (12 Monate)",
+        "quantity": 1,
+        "unitPrice": 89,
+        "total": 89
+      }
+    ]
+  },
+  {
+    "id": "inv-19",
+    "invoiceNumber": "RE-2026-019",
+    "customerId": "cust-tim",
+    "customerName": "Tim Zimmermann",
+    "amount": 1069.81,
+    "taxAmount": 170.81,
+    "netAmount": 899,
+    "taxRate": 19,
+    "issueDate": "2026-06-22",
+    "dueDate": "2026-07-06",
+    "status": "Offen",
+    "description": "Jahres-Support-Goldvertrag",
+    "paymentMethod": "Überweisung",
+    "items": [
+      {
+        "id": "item-19",
+        "description": "24/7 Telefonischer Notfall-Support für geschäftskritische Installationen",
+        "quantity": 1,
+        "unitPrice": 899,
+        "total": 899
+      }
+    ]
+  },
+  {
+    "id": "inv-20",
+    "invoiceNumber": "RE-2026-020",
+    "customerId": "cust-anna",
+    "customerName": "Anna Schmidt",
+    "amount": 2201.5,
+    "taxAmount": 351.5,
+    "netAmount": 1850,
+    "taxRate": 19,
+    "issueDate": "2026-06-22",
+    "dueDate": "2026-07-22",
+    "status": "Offen",
+    "description": "Digitalisierungs Beratung & Vor-Ort Workshop",
+    "paymentMethod": "Überweisung",
+    "items": [
+      {
+        "id": "item-20",
+        "description": "8-stündiger Workshop zur Portalausrichtung, Mitarbeiter-Coaching und dsgvo-Freigaben",
+        "quantity": 1,
+        "unitPrice": 1850,
+        "total": 1850
+      }
+    ]
+  },
+  {
+    "id": "inv-21",
+    "invoiceNumber": "RE-2026-021",
+    "customerId": "cust-kristina",
+    "customerName": "Kristina Koch",
+    "amount": 210.63,
+    "taxAmount": 33.63,
+    "netAmount": 177,
+    "taxRate": 19,
+    "issueDate": "2026-06-23",
+    "dueDate": "2026-07-07",
+    "status": "Offen",
+    "description": "YubiKey Admin Hardware-Token Paket",
+    "paymentMethod": "PayPal",
+    "items": [
+      {
+        "id": "item-21",
+        "description": "3 vorkonfigurierte YubiKeys der Serie 5 zur Zwei-Faktor-Freigabe",
+        "quantity": 3,
+        "unitPrice": 59,
+        "total": 177
+      }
+    ]
+  }
+]

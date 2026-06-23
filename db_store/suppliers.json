@@ -1,0 +1,170 @@
+[
+  {
+    "id": "sup-yubico",
+    "name": "Yubico AB Inc. Europe",
+    "contactPerson": "Magnus Sjöberg",
+    "email": "emea-sales@yubico.com",
+    "phone": "+46 8 500 000 00",
+    "address": "Olof Palmes Gata 11, 111 37 Stockholm, Sweden"
+  },
+  {
+    "id": "sup-edge-iron",
+    "name": "IronEdge Hardware Solutions GmbH",
+    "contactPerson": "Dieter Krause",
+    "email": "krause@ironedge-hardware.de",
+    "phone": "+49 40 1234560",
+    "address": "Industriestrasse 14, 22113 Hamburg, Germany"
+  },
+  {
+    "id": "sup-datev",
+    "name": "DATEV eG",
+    "contactPerson": "Martin Schneider",
+    "email": "partner-support@datev.de",
+    "phone": "+49 911 319-0",
+    "address": "Fürther Str. 212, 90429 Nürnberg, Germany"
+  },
+  {
+    "id": "sup-lexoffice",
+    "name": "Haufe-Lexware GmbH & Co. KG",
+    "contactPerson": "Sonja Müller",
+    "email": "api-integration@lexoffice.de",
+    "phone": "+49 761 898-0",
+    "address": "Munzinger Str. 9, 79111 Freiburg, Germany"
+  },
+  {
+    "id": "sup-stripe",
+    "name": "Stripe Payments Europe, Ltd.",
+    "contactPerson": "John O'Connor",
+    "email": "emea-merchant@stripe.com",
+    "phone": "+353 1 555-0199",
+    "address": "The One Building, Grand Canal Street Lower, Dublin 2, Ireland"
+  },
+  {
+    "id": "sup-secure-vault",
+    "name": "Ttresor Physical Secure Vaults GmbH",
+    "contactPerson": "Thomas Tresor",
+    "email": "t.tresor@tresore-deutschland.de",
+    "phone": "+49 30 5544332",
+    "address": "Schlossstrasse 48, 10115 Berlin, Germany"
+  },
+  {
+    "id": "sup-deepl",
+    "name": "DeepL SE",
+    "contactPerson": "Dr. Jaroslaw Kutylowski",
+    "email": "b2b-sales@deepl.com",
+    "phone": "+49 221 987654",
+    "address": "Maarweg 165, 50825 Köln, Germany"
+  },
+  {
+    "id": "sup-telekom",
+    "name": "Deutsche Telekom Business Solutions",
+    "contactPerson": "Harald Wagner",
+    "email": "wagner@telekom-business.de",
+    "phone": "+49 800 3305000",
+    "address": "Landgrabenweg 151, 53227 Bonn, Germany"
+  },
+  {
+    "id": "sup-dhl",
+    "name": "DHL Paket GmbH Corporate Sales",
+    "contactPerson": "Annegret Fischer",
+    "email": "b2b.fischer@dhl.com",
+    "phone": "+49 228 182-0",
+    "address": "Charles-de-Gaulle-Straße 20, 53113 Bonn, Germany"
+  },
+  {
+    "id": "sup-ionos",
+    "name": "IONOS SE Serverzentrum",
+    "contactPerson": "Sebastian Becker",
+    "email": "hostmaster@ionos.de",
+    "phone": "+49 721 91374-0",
+    "address": "Elgendorfer Str. 57, 56410 Montabaur, Germany"
+  },
+  {
+    "id": "sup-sand-media",
+    "name": "Sandstone Creative Media",
+    "contactPerson": "Alexander Graf",
+    "email": "graf@sandstone-media.de",
+    "phone": "+49 89 443322",
+    "address": "Prinzregentenstrasse 12, 80538 München, Germany"
+  },
+  {
+    "id": "sup-whitelabel-corp",
+    "name": "WhiteLabel Systems Ltd.",
+    "contactPerson": "Julian Brand",
+    "email": "brand@whitelabel-corp.com",
+    "phone": "+44 20 7946 0192",
+    "address": "221b Baker St, London NW1 6XE, United Kingdom"
+  },
+  {
+    "id": "sup-green-host",
+    "name": "GreenPlanet Hosting AG",
+    "contactPerson": "Claudia Berg",
+    "email": "berg@greenplanet-host.ch",
+    "phone": "+41 44 220 11 00",
+    "address": "Limmatquai 4, 8001 Zürich, Switzerland"
+  },
+  {
+    "id": "sup-gdpr-lawyer",
+    "name": "Rechtsanwaltskanzlei Dr. Datenschutz",
+    "contactPerson": "Dr. jur. Ulrich Beck",
+    "email": "beck@dr-datenschutz.de",
+    "phone": "+49 69 998877",
+    "address": "Bockenheimer Landstraße 102, 60325 Frankfurt am Main, Germany"
+  },
+  {
+    "id": "sup-cloudway",
+    "name": "CloudWay Technologies SAS",
+    "contactPerson": "Jean Dupont",
+    "email": "dupont@cloudway.fr",
+    "phone": "+33 1 42 27 78 90",
+    "address": "15 Rue de la Paix, 75002 Paris, France"
+  },
+  {
+    "id": "sup-office-world",
+    "name": "OfficeWorld GmbH",
+    "contactPerson": "Martina Schuster",
+    "email": "schuster@officeworld.de",
+    "phone": "+49 341 889900",
+    "address": "Grimmaische Str. 12, 04109 Leipzig, Germany"
+  },
+  {
+    "id": "sup-cyber-shield",
+    "name": "CyberShield Security Ltd.",
+    "contactPerson": "Sarah Connor",
+    "email": "shield-b2b@cybershield.io",
+    "phone": "+1 415 555 2640",
+    "address": "Market Street 100, San Francisco, CA 94103, USA"
+  },
+  {
+    "id": "sup-logic-com",
+    "name": "LogicCom Distribution KG",
+    "contactPerson": "Bernhard Lange",
+    "email": "lange@logiccom-dist.de",
+    "phone": "+49 211 556677",
+    "address": "Graf-Adolf-Straße 14, 40212 Düsseldorf, Germany"
+  },
+  {
+    "id": "sup-print-portal",
+    "name": "FlyerAlarm B2B Print & Offset eK",
+    "contactPerson": "Anja Wagner",
+    "email": "b2b.wagner@flyeralarm-offset.de",
+    "phone": "+49 931 46584-0",
+    "address": "Alfred-Nobel-Straße 18, 97080 Würzburg, Germany"
+  },
+  {
+    "id": "sup-logistik-expert",
+    "name": "Hanseatic Logistikhub Hamburg eK",
+    "contactPerson": "Klaus Störtebeker",
+    "email": "stoertebeker@hanseatic-hub.de",
+    "phone": "+49 40 889977",
+    "address": "Am Sandtorkai 1, 20457 Hamburg, Germany"
+  },
+  {
+    "id": "sup-voice-vox",
+    "name": "Vox-Audio Digital Solutions",
+    "contactPerson": "Elena Voigt",
+    "email": "voigt@vox-audio.com",
+    "phone": "+43 1 778899",
+    "address": "Kärntner Straße 18, 1010 Wien, Austria"
+  }
+]

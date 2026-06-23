@@ -1,0 +1,202 @@
+[
+  {
+    "id": "msg-1",
+    "senderId": "admin",
+    "receiverId": "cust-max",
+    "content": "Hallo Herr Mustermann, willkommen in Ihrem neuen Kundenportal! Hier können Sie wie besprochen alle Verträge und Projektvideos hochladen.",
+    "timestamp": "2026-05-20T08:30:00.000Z",
+    "isRead": true
+  },
+  {
+    "id": "msg-2",
+    "senderId": "cust-max",
+    "receiverId": "admin",
+    "content": "Hallo Frau Kraft, das sieht wirklich fantastisch und sehr übersichtlich aus! Ich habe direkt den unterschriebenen Kooperationsvertrag und das neue Vorstellungsvideo hochgeladen.",
+    "timestamp": "2026-05-20T10:20:00.000Z",
+    "isRead": true
+  },
+  {
+    "id": "msg-3",
+    "senderId": "admin",
+    "receiverId": "cust-max",
+    "content": "Wunderbar! Den Kooperationsvertrag habe ich soeben bereits als genehmigt markiert. Wir prüfen morgen direkt das Vorstellungsvideo und senden Ihnen unser detailliertes Feedback hier im Chat.",
+    "timestamp": "2026-05-20T11:05:00.000Z",
+    "isRead": true
+  },
+  {
+    "id": "msg-4",
+    "senderId": "cust-max",
+    "receiverId": "admin",
+    "content": "Super, vielen Dank für die extrem schnelle Bearbeitung! Ich freue mich auf die Rückmeldung zum Video.",
+    "timestamp": "2026-05-20T11:15:00.000Z",
+    "isRead": true
+  },
+  {
+    "id": "msg-5",
+    "senderId": "cust-tom",
+    "receiverId": "admin",
+    "content": "Hallo, ich habe unseren aktuellen Umsatzbericht für Q1 hochgeladen. Könnten wir dazu nächste Woche kurz sprechen?",
+    "timestamp": "2026-05-28T11:10:00.000Z",
+    "isRead": true
+  },
+  {
+    "id": "msg-6",
+    "senderId": "admin",
+    "receiverId": "cust-tom",
+    "content": "Hallo Herr Weber, sehr gerne! Ich habe Ihren Bericht gesichtet. Vorschlag: Dienstag, 3. Juni um 14:30 Uhr? Ich lege uns dafür direkt einen Termin im System an.",
+    "timestamp": "2026-05-28T14:00:00.000Z",
+    "isRead": true
+  },
+  {
+    "id": "msg-7",
+    "senderId": "cust-tom",
+    "receiverId": "admin",
+    "content": "Perfekt, der Termin passt mir ausgezeichnet. Vielen Dank für die Initiative!",
+    "timestamp": "2026-05-28T15:12:00.000Z",
+    "isRead": true
+  },
+  {
+    "id": "msg-8",
+    "senderId": "admin",
+    "receiverId": "cust-julia",
+    "content": "Hallo Frau Kaiser, die ersten UI/UX Designentwürfe für Ihre Printmedien liegen nun im Dateibereich bereit. Ich bin auf Ihr Feedback gespannt!",
+    "timestamp": "2026-06-02T13:30:00.000Z",
+    "isRead": true
+  },
+  {
+    "id": "msg-9",
+    "senderId": "cust-julia",
+    "receiverId": "admin",
+    "content": "Die Entwürfe sehen absolut edel aus, Frau Kraft! Besonders die Farbharmonie gefällt uns. Könnten wir am Montag, den 8. Juni um 11:00 Uhr die Feinabstimmung machen?",
+    "timestamp": "2026-06-03T09:15:00.000Z",
+    "isRead": true
+  },
+  {
+    "id": "msg-10",
+    "senderId": "admin",
+    "receiverId": "cust-julia",
+    "content": "Sehr gerne, der Termin ist eingetragen und bestätigt. Bis Montag!",
+    "timestamp": "2026-06-03T10:00:00.000Z",
+    "isRead": true
+  },
+  {
+    "id": "msg-11",
+    "senderId": "cust-stefan",
+    "receiverId": "admin",
+    "content": "Moin! Der Edge Server Mini ist eben bei uns in Hamburg eingetroffen. Gibt es beim Einstecken etwas Besonderes bezüglich der YubiKeys zu beachten?",
+    "timestamp": "2026-06-05T14:45:00.000Z",
+    "isRead": true
+  },
+  {
+    "id": "msg-12",
+    "senderId": "admin",
+    "receiverId": "cust-stefan",
+    "content": "Moin Herr Becker! Bitte schließen Sie den Server zuerst an das Netzwerk an. Drücken Sie den Hardware-Token erst, wenn die grüne LED-Statusleuchte konstant pulsiert. Wir besprechen das auch gerne im Vor-Ort-Termin am 9. Juni!",
+    "timestamp": "2026-06-05T15:30:00.000Z",
+    "isRead": true
+  },
+  {
+    "id": "msg-13",
+    "senderId": "cust-stefan",
+    "receiverId": "admin",
+    "content": "Alles klar, danke für den Tipp. Dann warte ich mit der Aktivierung auf Ihren Besuch am Dienstag. Bis dahin!",
+    "timestamp": "2026-06-05T16:10:00.000Z",
+    "isRead": true
+  },
+  {
+    "id": "msg-14",
+    "senderId": "cust-melanie",
+    "receiverId": "admin",
+    "content": "Hallo, unsere Rechtsabteilung hat die DSGVO-Zusatzvereinbarung geprüft. Wir benötigen noch ein unterschriebenes Exemplar von Ihnen zurück.",
+    "timestamp": "2026-06-10T08:50:00.000Z",
+    "isRead": true
+  },
+  {
+    "id": "msg-15",
+    "senderId": "admin",
+    "receiverId": "cust-melanie",
+    "content": "Hallo Frau Fischer, vielen Dank für das Feedback. Ich habe das digital signierte Dokument soeben hochgeladen und freigegeben. Der Webshop-Freigabe steht damit nichts mehr im Weg!",
+    "timestamp": "2026-06-10T10:15:00.000Z",
+    "isRead": true
+  },
+  {
+    "id": "msg-16",
+    "senderId": "cust-melanie",
+    "receiverId": "admin",
+    "content": "Großartig, das Dokument liegt vor. Ich freue mich auf unser Abschlussaudit morgen um 10:30 Uhr.",
+    "timestamp": "2026-06-10T11:40:00.000Z",
+    "isRead": true
+  },
+  {
+    "id": "msg-17",
+    "senderId": "cust-sarah",
+    "receiverId": "admin",
+    "content": "Hallo Team, die Newsletter-Engine läuft einwandfrei! Wie kann ich das Partner-Logo im Footer vollständig ausblenden (White-Labeling)?",
+    "timestamp": "2026-06-12T14:20:00.000Z",
+    "isRead": true
+  },
+  {
+    "id": "msg-18",
+    "senderId": "admin",
+    "receiverId": "cust-sarah",
+    "content": "Hallo Frau Wagner, das freut uns sehr! Die Deaktivierung erfolgt in den erweiterten Mandanten-Einstellungen. Ich zeige Ihnen die genauen Schritte in unserem Online-Termin am Montag um 16:00 Uhr.",
+    "timestamp": "2026-06-12T15:40:00.000Z",
+    "isRead": true
+  },
+  {
+    "id": "msg-19",
+    "senderId": "cust-michael",
+    "receiverId": "admin",
+    "content": "Hallo Frau Kraft, der Import der neuen Immobilien-Exposés hängt irgendwie fest. Könnten Sie einen Blick auf die XML-Struktur werfen?",
+    "timestamp": "2026-06-15T09:15:00.000Z",
+    "isRead": true
+  },
+  {
+    "id": "msg-20",
+    "senderId": "admin",
+    "receiverId": "cust-michael",
+    "content": "Hallo Herr Bauer, ich habe den Fehler behoben. In Zeile 42 war ein ungültiges Sonderzeichen im UTF-8 Header. Der Import ist nun erfolgreich durchgelaufen!",
+    "timestamp": "2026-06-15T11:00:00.000Z",
+    "isRead": true
+  },
+  {
+    "id": "msg-21",
+    "senderId": "cust-michael",
+    "receiverId": "admin",
+    "content": "Perfekt! Das ging ja unglaublich schnell. Besten Dank für den exzellenten Support.",
+    "timestamp": "2026-06-15T11:30:00.000Z",
+    "isRead": true
+  },
+  {
+    "id": "msg-22",
+    "senderId": "cust-laura",
+    "receiverId": "admin",
+    "content": "Hallo, wir führen morgen ein regulatorisches Notfall-Szenario durch und testen Ihren API-Response-Sollwert. Sind Sie erreichbar?",
+    "timestamp": "2026-06-16T13:45:00.000Z",
+    "isRead": false
+  },
+  {
+    "id": "msg-23",
+    "senderId": "cust-kristina",
+    "receiverId": "admin",
+    "content": "Hallo Frau Kraft, danke für die prompte Lieferung der YubiKeys. Die Einrichtung hat geklappt. Können wir die Belegübermittlung verschlüsseln?",
+    "timestamp": "2026-06-22T09:10:00.000Z",
+    "isRead": false
+  },
+  {
+    "id": "msg-24",
+    "senderId": "cust-philipp",
+    "receiverId": "admin",
+    "content": "Hallo! Unser ERP-Abgleich bricht ab, wenn wir Umlaute importieren. Haben Sie hierfür ein Update?",
+    "timestamp": "2026-06-22T14:30:00.000Z",
+    "isRead": false
+  },
+  {
+    "id": "msg-25",
+    "senderId": "cust-jan",
+    "receiverId": "admin",
+    "content": "Hallo, danke für den Termin am Freitag! Können Sie mir die Meeting-Einladung direkt an meine Google-Mail senden?",
+    "timestamp": "2026-06-23T08:15:00.000Z",
+    "isRead": false
+  }
+]

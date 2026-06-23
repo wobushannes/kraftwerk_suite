@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 
 export default function ManualDoc() {
-  const [activeManualTab, setActiveManualTab] = useState<'intro' | 'sec' | 'billing' | 'roadmap' | 'bot' | 'faq'>('intro');
+  const [activeManualTab, setActiveManualTab] = useState<'intro' | 'sec' | 'billing' | 'roadmap' | 'templates' | 'backups' | 'bot' | 'faq'>('intro');
   const [searchQuery, setSearchQuery] = useState('');
 
   const sections = [
@@ -44,14 +44,26 @@ export default function ManualDoc() {
       badge: 'Builder'
     },
     {
+      id: 'templates',
+      title: '5. Antwort-Vorlagen',
+      icon: FileText,
+      badge: 'Vorlagen'
+    },
+    {
+      id: 'backups',
+      title: '6. Notfall-Recovery',
+      icon: Shield,
+      badge: 'Recovery'
+    },
+    {
       id: 'bot',
-      title: '5. KI-Bot & Training',
+      title: '7. KI-Bot & Training',
       icon: Cpu,
       badge: 'NLP'
     },
     {
       id: 'faq',
-      title: '6. Support & FAQ',
+      title: '8. Support & FAQ',
       icon: LifeBuoy,
       badge: 'Hilfe'
     }
@@ -289,13 +301,81 @@ export default function ManualDoc() {
             </div>
           )}
 
+          {activeManualTab === 'templates' && (
+            <div className="space-y-6 animate-fade-in">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <span className="text-[10px] font-mono font-bold bg-indigo-50 text-indigo-700 border border-indigo-100 px-2 py-0.5 rounded">MODUL 5</span>
+                <span className="text-xs text-slate-400">Kommunikations-Vorlagen</span>
+              </div>
+              <h2 className="text-base font-bold text-slate-900">5. Antwort-Vorlagen & Textbausteine</h2>
+              <div className="text-xs text-slate-650 leading-relaxed space-y-4">
+                <p>
+                  Das System integriert ein ausgeklügeltes <strong>Antwort-Vorlagen & Textbausteine-System</strong>. Administratoren können vordefinierte Nachrichten für typische Anfragen erstellen und diese im Direktnachrichten-Chat (DMs) oder in E-Mail-Korrespondenzen mit einem Klick einfügen.
+                </p>
+
+                <h3 className="font-bold text-slate-800 text-sm mt-4">Kernfunktionen:</h3>
+                <ul className="list-disc pl-5 space-y-2">
+                  <li>
+                    <strong>Kanal-Spezifität:</strong> Vorlagen können als <em>Universal</em>, <em>Nur Live-Chat (DMs)</em> oder <em>Nur E-Mails</em> deklariert werden. Im DM-Chatfenster werden automatisch nur die für den Chat relevanten Vorlagen im Schnellwähler gelistet.
+                  </li>
+                  <li>
+                    <strong>Kollaboratives Kopieren:</strong> Jede Vorlage besitzt eine Schnellkopier-Funktion für die Zwischenablage (<kbd className="bg-slate-100 px-1 py-0.5 rounded border text-[10px] font-mono">Clipboard API</kbd>) zur freien Verwendung in Drittsystemen.
+                  </li>
+                  <li>
+                    <strong>Volle administrative CRUD-Kontrolle:</strong> Antwort-Vorlagen können im Register <em>"Antwort-Vorlagen"</em> im Hauptmenü gesucht, nach Kanal/Kategorie gefiltert sowie vollständig neu angelegt, editiert oder entfernt werden. Alle Änderungen werden persistent synchronisiert.
+                  </li>
+                </ul>
+
+                <div className="bg-indigo-50/30 p-4 rounded-xl border border-indigo-100 mt-4">
+                  <p className="font-bold text-slate-800 text-[11px] font-mono uppercase tracking-wide">💡 ANWENDUNG IM DM-SCHNELLWÄHLER</p>
+                  <p className="text-[11px] text-slate-500 mt-1">
+                    Öffnen Sie die DMs eines beliebigen Kunden und klicken Sie in der unteren Aktionsleiste auf das 📋 Symbol ("Vorlage..."). Wählen Sie eine der angelegten Vorlagen aus – der Inhalt wird sofort vollautomatisch und passend in das Nachrichteneingabefeld eingefügt!
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeManualTab === 'backups' && (
+            <div className="space-y-6 animate-fade-in">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <span className="text-[10px] font-mono font-bold bg-rose-50 text-rose-700 border border-rose-100 px-2 py-0.5 rounded">MODUL 6</span>
+                <span className="text-xs text-slate-400">Automatisierte Desastersicherheit</span>
+              </div>
+              <h2 className="text-base font-bold text-slate-900">6. Notfall-Recovery & Sicherheitsbackups</h2>
+              <div className="text-xs text-slate-650 leading-relaxed space-y-4">
+                <p>
+                  Zur Gewährleistung maximaler Ausfallsicherheit besitzt das Mandantenportal ein hochmodernes <strong>Notfall-Wiederherstellungs- und Backup-System</strong>. Mandantendaten und Systemeinstellungen werden revisionssicher gelagert und können bei Unfällen wiederhergestellt werden.
+                </p>
+
+                <h3 className="font-bold text-slate-800 text-sm mt-4">Technische Realisierung der Zuverlässigkeit:</h3>
+                <ul className="list-disc pl-5 space-y-2.5">
+                  <li>
+                    <strong>Echtzeit SHA-256 Integritätsprüfung nach Komprimierung:</strong> Beim Erstellen von Sicherungen (.zip) schreibt das System temporäre Dateien, berechnet deren echten Festplatten-Hashwert per Krypto-SHA-256 und gleicht diesen direkt im Arbeitsspeicher ab. Erst nach erfolgreicher 100%-Übereinstimmung wird die Datei final in das Backup-Register verschoben.
+                  </li>
+                  <li>
+                    <strong>Automatische tägliche Sicherungen:</strong> Ein im Server integrierter Scheduler legt täglich um 03:00 Uhr nachts ein verschlüsseltes Vollbackup aller Datenbanktabellen und hochgeladenen Mandantenzertifikate im internen SSD-Verzeichnis <code className="font-mono bg-slate-100 text-slate-800 px-1 py-0.5 rounded text-[10px]">/data/backups/</code> ab.
+                  </li>
+                  <li>
+                    <strong>Manuelle Ein-Klick Sicherung:</strong> Ein Administrator kann im Sicherheitszentrum jederzeit ein manuelles Vollbackup triggern. Die erzeugten ZIP-Pakete enthalten Prüfsummen und können sofort zur Offline-Archivierung heruntergeladen werden.
+                  </li>
+                </ul>
+
+                <h3 className="font-bold text-slate-800 text-sm mt-4">Der Notfall-Restore (Zentralrechner):</h3>
+                <p>
+                  Im Falle fehlerhafter Dateneingaben oder Systemstörungen kann ein Administrator im Notfall-Wiederherstellung-Dashboard jede beliebige, verifizierte .zip-Archivsicherung auswählen und zurückspielen. Die betroffenen JSON-Datenbankdateien im Verzeichnis <code className="font-mono bg-slate-100 text-slate-800 px-1 py-0.5 rounded text-[10px]">/data/</code> werden in Millisekunden überschrieben. Zudem können auch ZIP-Dateien von Ihrem lokalen PC hochgeladen und sicher wiederhergestellt werden.
+                </p>
+              </div>
+            </div>
+          )}
+
           {activeManualTab === 'bot' && (
             <div className="space-y-6">
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <span className="text-[10px] font-mono font-bold bg-indigo-50 text-indigo-700 border border-indigo-100 px-2 py-0.5 rounded">MODUL 5</span>
+                <span className="text-[10px] font-mono font-bold bg-indigo-50 text-indigo-700 border border-indigo-100 px-2 py-0.5 rounded">MODUL 7</span>
                 <span className="text-xs text-slate-400">KI-Bot NLP-Engine</span>
               </div>
-              <h2 className="text-base font-bold text-slate-900">5. KI-Bot Training & Keyword Trigger-Engine</h2>
+              <h2 className="text-base font-bold text-slate-900">7. KI-Bot Training & Keyword Trigger-Engine</h2>
               <div className="text-xs text-slate-650 leading-relaxed space-y-4">
                 <p>
                   Der eingebaute Support-Assistent reagiert mithilfe einer dezentralen **NLP-Keyword Trigger-Engine** auf Kundenfragen. Er arbeitet ohne externe Cloud-API-Kosten und kann vom Admin vollständig trainiert werden.
@@ -327,10 +407,10 @@ export default function ManualDoc() {
           {activeManualTab === 'faq' && (
             <div className="space-y-6">
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <span className="text-[10px] font-mono font-bold bg-indigo-50 text-indigo-700 border border-indigo-100 px-2 py-0.5 rounded">MODUL 6</span>
+                <span className="text-[10px] font-mono font-bold bg-indigo-50 text-indigo-700 border border-indigo-100 px-2 py-0.5 rounded">MODUL 8</span>
                 <span className="text-xs text-slate-400">Support & Wartung</span>
               </div>
-              <h2 className="text-base font-bold text-slate-900">6. Support-Leitfaden & FAQ</h2>
+              <h2 className="text-base font-bold text-slate-900">8. Support-Leitfaden & FAQ</h2>
               <div className="text-xs text-slate-650 leading-relaxed space-y-4">
                 
                 <div className="space-y-4 font-sans">

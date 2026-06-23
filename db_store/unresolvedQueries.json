@@ -1,0 +1,149 @@
+[
+  {
+    "id": "uq-1",
+    "query": "Kann ich die Aura Suite auch offline auf einem Kreuzfahrtschiff nutzen?",
+    "timestamp": "2026-06-20T14:22:00.000Z",
+    "customerName": "Stefan Becker",
+    "customerId": "cust-stefan"
+  },
+  {
+    "id": "uq-2",
+    "query": "Bieten Sie auch Schulungen für dsgvo-Anforderungen vor Ort in Schweden an?",
+    "timestamp": "2026-06-21T09:15:00.000Z",
+    "customerName": "Julia Kaiser",
+    "customerId": "cust-julia"
+  },
+  {
+    "id": "uq-3",
+    "query": "Wo finde ich das Zertifikat für meine FIDO2 YubiKeys?",
+    "timestamp": "2026-06-21T11:40:00.000Z",
+    "customerName": "Kristina Koch",
+    "customerId": "cust-kristina"
+  },
+  {
+    "id": "uq-4",
+    "query": "Kann die Lexoffice-Bridge auch Rechnungen in Fremdwährungen wie USD verbuchen?",
+    "timestamp": "2026-06-21T13:02:00.000Z",
+    "customerName": "Elena Petrov",
+    "customerId": "cust-elena"
+  },
+  {
+    "id": "uq-5",
+    "query": "Gibt es ein Limit bei der Anzahl der eingestellten Produkte im Webshop?",
+    "timestamp": "2026-06-22T08:11:00.000Z",
+    "customerName": "Philipp Voigt",
+    "customerId": "cust-philipp"
+  },
+  {
+    "id": "uq-6",
+    "query": "Wie hoch ist die Bandbreitengarantie beim adaptiven Video-Streaming?",
+    "timestamp": "2026-06-22T09:30:00.000Z",
+    "customerName": "Michael Bauer",
+    "customerId": "cust-michael"
+  },
+  {
+    "id": "uq-7",
+    "query": "Können wir den DATEV-Export wöchentlich statt monatlich automatisieren?",
+    "timestamp": "2026-06-22T10:45:00.000Z",
+    "customerName": "Tom Weber",
+    "customerId": "cust-tom"
+  },
+  {
+    "id": "uq-8",
+    "query": "Wie lange werden gelöschte Notfall-Backups im Papierkorb der Cloud vorgehalten?",
+    "timestamp": "2026-06-22T11:55:00.000Z",
+    "customerName": "Laura Richter",
+    "customerId": "cust-laura"
+  },
+  {
+    "id": "uq-9",
+    "query": "Soll ich den Local Secure Edge Server Mini nachts ausschalten oder durchlaufen lassen?",
+    "timestamp": "2026-06-22T12:04:00.000Z",
+    "customerName": "Stefan Becker",
+    "customerId": "cust-stefan"
+  },
+  {
+    "id": "uq-10",
+    "query": "Ist das Consent-Banner auch barrierefrei nach WCAG 2.1 Standard?",
+    "timestamp": "2026-06-22T13:40:00.000Z",
+    "customerName": "Sandra Meier",
+    "customerId": "cust-sandra"
+  },
+  {
+    "id": "uq-11",
+    "query": "Wo kann ich den Absender-E-Mail-Server (SMTP) im CRM konfigurieren?",
+    "timestamp": "2026-06-22T14:12:00.000Z",
+    "customerName": "Sarah Wagner",
+    "customerId": "cust-sarah"
+  },
+  {
+    "id": "uq-12",
+    "query": "Kann ich die Terminerinnerungen per SMS statt per WhatsApp versenden?",
+    "timestamp": "2026-06-22T15:00:00.000Z",
+    "customerName": "Jan Schulze",
+    "customerId": "cust-jan"
+  },
+  {
+    "id": "uq-13",
+    "query": "Bis zu welchem Dateigrößen-Limit kann ich Belege im Kundenbereich hochladen?",
+    "timestamp": "2026-06-22T16:05:00.000Z",
+    "customerName": "Patrick Lehmann",
+    "customerId": "cust-patrick"
+  },
+  {
+    "id": "uq-14",
+    "query": "Unterstützt das eIDAS Signatur-Tool auch handschriftliche Signaturen mit Apple Pencil?",
+    "timestamp": "2026-06-22T16:50:00.000Z",
+    "customerName": "Kristina Koch",
+    "customerId": "cust-kristina"
+  },
+  {
+    "id": "uq-15",
+    "query": "Wie verhalten sich die Lizenzkosten, wenn ich von 50 auf 100 Mitarbeiter aufstocke?",
+    "timestamp": "2026-06-23T08:15:00.000Z",
+    "customerName": "Sandra Meier",
+    "customerId": "cust-sandra"
+  },
+  {
+    "id": "uq-16",
+    "query": "Gibt es eine automatiche Schnittstelle zur Deutschen Post für DHL Versandetiketten?",
+    "timestamp": "2026-06-23T08:45:00.000Z",
+    "customerName": "Verena Schuster",
+    "customerId": "cust-verena"
+  },
+  {
+    "id": "uq-17",
+    "query": "Wo finde ich meine jährliche dsgvo-Einwilligungsstatistik der Web-Marketing Engine?",
+    "timestamp": "2026-06-23T09:10:00.000Z",
+    "customerName": "Sabine Frank",
+    "customerId": "cust-sabine"
+  },
+  {
+    "id": "uq-18",
+    "query": "Unterstützt das System auch Sammelrechnungen am Monatsende?",
+    "timestamp": "2026-06-23T09:30:00.000Z",
+    "customerName": "Tom Weber",
+    "customerId": "cust-tom"
+  },
+  {
+    "id": "uq-19",
+    "query": "Muss ich die YubiKeys von Ihnen kaufen oder kann ich bereits vorhandene Schlüssel anlernen?",
+    "timestamp": "2026-06-23T09:40:00.000Z",
+    "customerName": "Stefan Becker",
+    "customerId": "cust-stefan"
+  },
+  {
+    "id": "uq-20",
+    "query": "Kann ich mein Custom Logo auch auf dem Login-Portal für die Kunden einbinden?",
+    "timestamp": "2026-06-23T10:05:00.000Z",
+    "customerName": "Sarah Wagner",
+    "customerId": "cust-sarah"
+  },
+  {
+    "id": "uq-21",
+    "query": "Wie kann ich mein altes WordPress-Blog direkt in Aura-Blog migrieren?",
+    "timestamp": "2026-06-23T10:15:00.000Z",
+    "customerName": "Julia Kaiser",
+    "customerId": "cust-julia"
+  }
+]

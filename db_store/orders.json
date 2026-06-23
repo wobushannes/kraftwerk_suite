@@ -1,0 +1,497 @@
+[
+  {
+    "id": "ord-1",
+    "orderNumber": "AU-2026-001",
+    "customerId": "cust-max",
+    "customerName": "Max Mustermann",
+    "items": [
+      {
+        "productId": "prod-cms-booking",
+        "productName": "Aura Booking Pro Add-on",
+        "quantity": 1,
+        "priceAtPurchase": 289,
+        "total": 289
+      }
+    ],
+    "totalAmount": 289,
+    "status": "Geliefert",
+    "paymentMethod": "PayPal",
+    "paymentStatus": "Bezahlt",
+    "createdAt": "2026-05-16T14:00:00.000Z",
+    "carrier": "DHL",
+    "trackingNumber": "CY123456789DE",
+    "shippingLabelPrinted": true,
+    "shippingAddress": "Musterstraße 1, 80331 München",
+    "dsgvoConsent": true
+  },
+  {
+    "id": "ord-2",
+    "orderNumber": "AU-2026-002",
+    "customerId": "cust-tom",
+    "customerName": "Tom Weber",
+    "items": [
+      {
+        "productId": "prod-cms-shop",
+        "productName": "Aura Webshop Core Add-on",
+        "quantity": 1,
+        "priceAtPurchase": 499,
+        "total": 499
+      }
+    ],
+    "totalAmount": 499,
+    "status": "In Bearbeitung",
+    "paymentMethod": "Überweisung",
+    "paymentStatus": "Ausstehend",
+    "createdAt": "2026-06-20T09:30:00.000Z",
+    "shippingAddress": "Bahnhofsplatz 5, 80335 München",
+    "dsgvoConsent": true
+  },
+  {
+    "id": "ord-3",
+    "orderNumber": "AU-2026-003",
+    "customerId": "cust-julia",
+    "customerName": "Julia Kaiser",
+    "items": [
+      {
+        "productId": "prod-seo-module",
+        "productName": "Aura SEO & Analytics Suite",
+        "quantity": 2,
+        "priceAtPurchase": 149,
+        "total": 298
+      }
+    ],
+    "totalAmount": 298,
+    "status": "Geliefert",
+    "paymentMethod": "Kreditkarte",
+    "paymentStatus": "Bezahlt",
+    "createdAt": "2026-06-02T11:00:00.000Z",
+    "carrier": "UPS",
+    "trackingNumber": "1Z999AA10123456784",
+    "shippingLabelPrinted": true,
+    "shippingAddress": "Rotebühlplatz 4, 70178 Stuttgart",
+    "dsgvoConsent": true
+  },
+  {
+    "id": "ord-4",
+    "orderNumber": "AU-2026-004",
+    "customerId": "cust-stefan",
+    "customerName": "Stefan Becker",
+    "items": [
+      {
+        "productId": "prod-server-mini",
+        "productName": "Aura Local Secure Edge Server Mini",
+        "quantity": 1,
+        "priceAtPurchase": 699,
+        "total": 699
+      },
+      {
+        "productId": "prod-key-yubi",
+        "productName": "Yubico YubiKey 5 NFC Hardware-Token",
+        "quantity": 5,
+        "priceAtPurchase": 59,
+        "total": 295
+      }
+    ],
+    "totalAmount": 994,
+    "status": "Geliefert",
+    "paymentMethod": "Überweisung",
+    "paymentStatus": "Bezahlt",
+    "createdAt": "2026-06-04T15:30:00.000Z",
+    "carrier": "DHL Express",
+    "trackingNumber": "DE9876543210",
+    "shippingLabelPrinted": true,
+    "shippingAddress": "Speicherstadt 8, 20457 Hamburg",
+    "dsgvoConsent": true
+  },
+  {
+    "id": "ord-5",
+    "orderNumber": "AU-2026-005",
+    "customerId": "cust-melanie",
+    "customerName": "Melanie Fischer",
+    "items": [
+      {
+        "productId": "prod-cms-core",
+        "productName": "Aura Suite Enterprise Jahreslizenz",
+        "quantity": 1,
+        "priceAtPurchase": 1499,
+        "total": 1499
+      }
+    ],
+    "totalAmount": 1499,
+    "status": "Geliefert",
+    "paymentMethod": "Kreditkarte",
+    "paymentStatus": "Bezahlt",
+    "createdAt": "2026-05-20T10:15:00.000Z",
+    "shippingAddress": "Königsallee 72, 40212 Düsseldorf",
+    "dsgvoConsent": true
+  },
+  {
+    "id": "ord-6",
+    "orderNumber": "AU-2026-006",
+    "customerId": "cust-christian",
+    "customerName": "Christian Hoffmann",
+    "items": [
+      {
+        "productId": "prod-cloud-sync",
+        "productName": "Aura Hybrid Cloud Sync Connector",
+        "quantity": 1,
+        "priceAtPurchase": 129,
+        "total": 129
+      }
+    ],
+    "totalAmount": 129,
+    "status": "In Bearbeitung",
+    "paymentMethod": "PayPal",
+    "paymentStatus": "Bezahlt",
+    "createdAt": "2026-06-21T16:45:00.000Z",
+    "shippingAddress": "Friedrichstraße 95, 10117 Berlin",
+    "dsgvoConsent": true
+  },
+  {
+    "id": "ord-7",
+    "orderNumber": "AU-2026-007",
+    "customerId": "cust-sarah",
+    "customerName": "Sarah Wagner",
+    "items": [
+      {
+        "productId": "prod-newsletter-addon",
+        "productName": "Aura Newsletter & Marketing Engine",
+        "quantity": 1,
+        "priceAtPurchase": 189,
+        "total": 189
+      }
+    ],
+    "totalAmount": 189,
+    "status": "Geliefert",
+    "paymentMethod": "PayPal",
+    "paymentStatus": "Bezahlt",
+    "createdAt": "2026-06-12T08:00:00.000Z",
+    "shippingAddress": "Zeil 102, 60313 Frankfurt am Main",
+    "dsgvoConsent": true
+  },
+  {
+    "id": "ord-8",
+    "orderNumber": "AU-2026-008",
+    "customerId": "cust-michael",
+    "customerName": "Michael Bauer",
+    "items": [
+      {
+        "productId": "prod-video-portal",
+        "productName": "Aura Video-Schnittstelle & Cloud-Encoder",
+        "quantity": 1,
+        "priceAtPurchase": 349,
+        "total": 349
+      }
+    ],
+    "totalAmount": 349,
+    "status": "Geliefert",
+    "paymentMethod": "Überweisung",
+    "paymentStatus": "Bezahlt",
+    "createdAt": "2026-06-01T13:30:00.000Z",
+    "shippingAddress": "Maximilianstraße 25, 80539 München",
+    "dsgvoConsent": true
+  },
+  {
+    "id": "ord-9",
+    "orderNumber": "AU-2026-009",
+    "customerId": "cust-laura",
+    "customerName": "Laura Richter",
+    "items": [
+      {
+        "productId": "prod-hardware-vault",
+        "productName": "Aura Physical Security Vault S",
+        "quantity": 1,
+        "priceAtPurchase": 279,
+        "total": 279
+      },
+      {
+        "productId": "prod-key-yubi",
+        "productName": "Yubico YubiKey 5 NFC Hardware-Token",
+        "quantity": 2,
+        "priceAtPurchase": 59,
+        "total": 118
+      }
+    ],
+    "totalAmount": 397,
+    "status": "Geliefert",
+    "paymentMethod": "Überweisung",
+    "paymentStatus": "Bezahlt",
+    "createdAt": "2026-06-05T09:00:00.000Z",
+    "carrier": "DHL",
+    "trackingNumber": "CY998877665DE",
+    "shippingLabelPrinted": true,
+    "shippingAddress": "Siemensstraße 12, 90443 Nürnberg",
+    "dsgvoConsent": true
+  },
+  {
+    "id": "ord-10",
+    "orderNumber": "AU-2026-010",
+    "customerId": "cust-sandra",
+    "customerName": "Sandra Meier",
+    "items": [
+      {
+        "productId": "prod-contract-signing",
+        "productName": "Aura Digital Signature Add-on",
+        "quantity": 1,
+        "priceAtPurchase": 249,
+        "total": 249
+      }
+    ],
+    "totalAmount": 249,
+    "status": "Geliefert",
+    "paymentMethod": "Kreditkarte",
+    "paymentStatus": "Bezahlt",
+    "createdAt": "2026-06-10T11:20:00.000Z",
+    "shippingAddress": "Podbielskistraße 115, 30177 Hannover",
+    "dsgvoConsent": true
+  },
+  {
+    "id": "ord-11",
+    "orderNumber": "AU-2026-011",
+    "customerId": "cust-dennis",
+    "customerName": "Dennis Schmitz",
+    "items": [
+      {
+        "productId": "prod-cms-booking",
+        "productName": "Aura Booking Pro Add-on",
+        "quantity": 1,
+        "priceAtPurchase": 289,
+        "total": 289
+      }
+    ],
+    "totalAmount": 289,
+    "status": "Geliefert",
+    "paymentMethod": "PayPal",
+    "paymentStatus": "Bezahlt",
+    "createdAt": "2026-06-14T14:15:00.000Z",
+    "shippingAddress": "Hohenzollernring 14, 50672 Köln",
+    "dsgvoConsent": true
+  },
+  {
+    "id": "ord-12",
+    "orderNumber": "AU-2026-012",
+    "customerId": "cust-elena",
+    "customerName": "Elena Petrov",
+    "items": [
+      {
+        "productId": "prod-accounting-api",
+        "productName": "Aura DATEV & Lexoffice Invoicing Bridge",
+        "quantity": 1,
+        "priceAtPurchase": 159,
+        "total": 159
+      }
+    ],
+    "totalAmount": 159,
+    "status": "Geliefert",
+    "paymentMethod": "Überweisung",
+    "paymentStatus": "Bezahlt",
+    "createdAt": "2026-06-15T15:30:00.000Z",
+    "shippingAddress": "Albertplatz 1, 01097 Dresden",
+    "dsgvoConsent": true
+  },
+  {
+    "id": "ord-13",
+    "orderNumber": "AU-2026-013",
+    "customerId": "cust-philipp",
+    "customerName": "Philipp Voigt",
+    "items": [
+      {
+        "productId": "prod-cms-shop",
+        "productName": "Aura Webshop Core Add-on",
+        "quantity": 1,
+        "priceAtPurchase": 499,
+        "total": 499
+      },
+      {
+        "productId": "prod-whatsapp-api",
+        "productName": "WhatsApp Business API Schnittstelle",
+        "quantity": 1,
+        "priceAtPurchase": 319,
+        "total": 319
+      }
+    ],
+    "totalAmount": 818,
+    "status": "Geliefert",
+    "paymentMethod": "PayPal",
+    "paymentStatus": "Bezahlt",
+    "createdAt": "2026-06-18T10:10:00.000Z",
+    "shippingAddress": "Karl-Liebknecht-Straße 110, 04275 Leipzig",
+    "dsgvoConsent": true
+  },
+  {
+    "id": "ord-14",
+    "orderNumber": "AU-2026-014",
+    "customerId": "cust-jan",
+    "customerName": "Jan Schulze",
+    "items": [
+      {
+        "productId": "prod-hrm-addon",
+        "productName": "Aura Team & HRM Workforce Planner",
+        "quantity": 1,
+        "priceAtPurchase": 229,
+        "total": 229
+      }
+    ],
+    "totalAmount": 229,
+    "status": "Geliefert",
+    "paymentMethod": "Überweisung",
+    "paymentStatus": "Bezahlt",
+    "createdAt": "2026-06-19T09:45:00.000Z",
+    "shippingAddress": "Kiellinie 45, 24105 Kiel",
+    "dsgvoConsent": true
+  },
+  {
+    "id": "ord-15",
+    "orderNumber": "AU-2026-015",
+    "customerId": "cust-sabine",
+    "customerName": "Sabine Frank",
+    "items": [
+      {
+        "productId": "prod-lead-booster",
+        "productName": "Aura B2B Lead Booster & Scraper",
+        "quantity": 1,
+        "priceAtPurchase": 169,
+        "total": 169
+      }
+    ],
+    "totalAmount": 169,
+    "status": "Geliefert",
+    "paymentMethod": "Kreditkarte",
+    "paymentStatus": "Bezahlt",
+    "createdAt": "2026-06-20T11:00:00.000Z",
+    "shippingAddress": "Königstraße 5, 90402 Nürnberg",
+    "dsgvoConsent": true
+  },
+  {
+    "id": "ord-16",
+    "orderNumber": "AU-2026-016",
+    "customerId": "cust-patrick",
+    "customerName": "Patrick Lehmann",
+    "items": [
+      {
+        "productId": "prod-translation-module",
+        "productName": "Aura Multilingual Translation Engine",
+        "quantity": 1,
+        "priceAtPurchase": 99,
+        "total": 99
+      }
+    ],
+    "totalAmount": 99,
+    "status": "Geliefert",
+    "paymentMethod": "PayPal",
+    "paymentStatus": "Bezahlt",
+    "createdAt": "2026-06-21T13:12:00.000Z",
+    "shippingAddress": "Rüttenscheider Str. 65, 45130 Essen",
+    "dsgvoConsent": true
+  },
+  {
+    "id": "ord-17",
+    "orderNumber": "AU-2026-017",
+    "customerId": "cust-verena",
+    "customerName": "Verena Schuster",
+    "items": [
+      {
+        "productId": "prod-backup-cloud-vault",
+        "productName": "Secure Cloud Backup Space (100GB)",
+        "quantity": 1,
+        "priceAtPurchase": 89,
+        "total": 89
+      }
+    ],
+    "totalAmount": 89,
+    "status": "In Bearbeitung",
+    "paymentMethod": "Überweisung",
+    "paymentStatus": "Ausstehend",
+    "createdAt": "2026-06-22T10:00:00.000Z",
+    "shippingAddress": "Wilhelmstraße 4, 65185 Wiesbaden",
+    "dsgvoConsent": true
+  },
+  {
+    "id": "ord-18",
+    "orderNumber": "AU-2026-018",
+    "customerId": "cust-tim",
+    "customerName": "Tim Zimmermann",
+    "items": [
+      {
+        "productId": "prod-support-gold",
+        "productName": "Premium Support Gold (12 Monate)",
+        "quantity": 1,
+        "priceAtPurchase": 899,
+        "total": 899
+      }
+    ],
+    "totalAmount": 899,
+    "status": "Geliefert",
+    "paymentMethod": "Überweisung",
+    "paymentStatus": "Bezahlt",
+    "createdAt": "2026-06-22T15:45:00.000Z",
+    "shippingAddress": "Schwarzwaldstraße 12, 79102 Freiburg",
+    "dsgvoConsent": true
+  },
+  {
+    "id": "ord-19",
+    "orderNumber": "AU-2026-019",
+    "customerId": "cust-anna",
+    "customerName": "Anna Schmidt",
+    "items": [
+      {
+        "productId": "prod-consulting-pkg",
+        "productName": "Digitalisierungs-Workshop & Setup vor Ort",
+        "quantity": 1,
+        "priceAtPurchase": 1850,
+        "total": 1850
+      }
+    ],
+    "totalAmount": 1850,
+    "status": "In Bearbeitung",
+    "paymentMethod": "Überweisung",
+    "paymentStatus": "Ausstehend",
+    "createdAt": "2026-06-22T17:00:00.000Z",
+    "shippingAddress": "Hauptstraße 15, 80335 München",
+    "dsgvoConsent": true
+  },
+  {
+    "id": "ord-20",
+    "orderNumber": "AU-2026-020",
+    "customerId": "cust-kristina",
+    "customerName": "Kristina Koch",
+    "items": [
+      {
+        "productId": "prod-key-yubi",
+        "productName": "Yubico YubiKey 5 NFC Hardware-Token",
+        "quantity": 3,
+        "priceAtPurchase": 59,
+        "total": 177
+      }
+    ],
+    "totalAmount": 177,
+    "status": "In Bearbeitung",
+    "paymentMethod": "PayPal",
+    "paymentStatus": "Bezahlt",
+    "createdAt": "2026-06-23T08:30:00.000Z",
+    "shippingAddress": "Phoenixsee 12, 44263 Dortmund",
+    "dsgvoConsent": true
+  },
+  {
+    "id": "ord-21",
+    "orderNumber": "AU-2026-021",
+    "customerId": "cust-andreas",
+    "customerName": "Andreas Krause",
+    "items": [
+      {
+        "productId": "prod-gdpr-audit",
+        "productName": "Dienstleistung: DSGVO-Konformitäts-Audit",
+        "quantity": 1,
+        "priceAtPurchase": 549,
+        "total": 549
+      }
+    ],
+    "totalAmount": 549,
+    "status": "Storniert",
+    "paymentMethod": "Überweisung",
+    "paymentStatus": "Rückerstattet",
+    "createdAt": "2026-06-23T09:00:00.000Z",
+    "shippingAddress": "Weserstraße 48, 28195 Bremen",
+    "dsgvoConsent": true
+  }
+]

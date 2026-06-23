@@ -1,0 +1,170 @@
+[
+  {
+    "id": "appt-1",
+    "title": "Vertrags-Review Muster GmbH",
+    "date": "2026-06-02",
+    "time": "10:00",
+    "description": "Abschlussbesprechung der neuen Kooperationsvereinbarung",
+    "customerId": "cust-max"
+  },
+  {
+    "id": "appt-2",
+    "title": "Umsatzbericht-Analyse Weber Solutions",
+    "date": "2026-06-03",
+    "time": "14:30",
+    "description": "Gemeinsame Analyse der Q1-Kennzahlen im Online-Meeting",
+    "customerId": "cust-tom"
+  },
+  {
+    "id": "appt-3",
+    "title": "Onboarding-Gespräch Schmidt AG",
+    "date": "2026-06-05",
+    "time": "09:00",
+    "description": "Erstes Onboarding und Bedarfsanalyse für Marketingverträge",
+    "customerId": "cust-anna"
+  },
+  {
+    "id": "appt-4",
+    "title": "Abstimmung UI/UX Printmedien",
+    "date": "2026-06-08",
+    "time": "11:00",
+    "description": "Review der ersten Design-Entwürfe für die neue Broschüren-Kampagne",
+    "customerId": "cust-julia"
+  },
+  {
+    "id": "appt-5",
+    "title": "Inbetriebnahme Edge Server Mini",
+    "date": "2026-06-09",
+    "time": "15:00",
+    "description": "Technische Begleitung bei der Installation des lüfterlosen Mini-PCs im Containerhafen Hamburg",
+    "customerId": "cust-stefan"
+  },
+  {
+    "id": "appt-6",
+    "title": "Audit-Abschluss & Freigabe",
+    "date": "2026-06-11",
+    "time": "10:30",
+    "description": "Gemeinsame rechtliche Abnahme und Aktivierung des Webshops",
+    "customerId": "cust-melanie"
+  },
+  {
+    "id": "appt-7",
+    "title": "Mitarbeiter-Einführung Smart Home",
+    "date": "2026-06-12",
+    "time": "13:00",
+    "description": "Training der Techniker zur Anwendung der Vorlagen im CRM-Portal",
+    "customerId": "cust-christian"
+  },
+  {
+    "id": "appt-8",
+    "title": "SEO & White-Labeling Strategie",
+    "date": "2026-06-15",
+    "time": "16:00",
+    "description": "Workshop zur Anpassung des Partner-Brandings im Kundenfrontend",
+    "customerId": "cust-sarah"
+  },
+  {
+    "id": "appt-9",
+    "title": "Präsentation Luxus-Exposé System",
+    "date": "2026-06-16",
+    "time": "09:30",
+    "description": "Abnahme der Schnittstelle zur automatisierten Zusendung von Immobilienangeboten",
+    "customerId": "cust-michael"
+  },
+  {
+    "id": "appt-10",
+    "title": "Regulatorische Notfall-Übung",
+    "date": "2026-06-17",
+    "time": "14:00",
+    "description": "Simulation eines Server-Ausfalls und Test-Restore der Rohdaten im Notfall-System",
+    "customerId": "cust-laura"
+  },
+  {
+    "id": "appt-11",
+    "title": "DATEV-Schnittstellen Review",
+    "date": "2026-06-18",
+    "time": "11:30",
+    "description": "Reaktivierungsgespräch und Einrichtung des Buchaltungs-Add-ons",
+    "customerId": "cust-andreas"
+  },
+  {
+    "id": "appt-12",
+    "title": "CRM-Evaluation 50er Team",
+    "date": "2026-06-19",
+    "time": "10:00",
+    "description": "Feedback-Meeting bezüglich Auslastung, Performance und Benutzerführung der Enterprise Lizenz",
+    "customerId": "cust-sandra"
+  },
+  {
+    "id": "appt-13",
+    "title": "Messe-Vorplanung Sommer",
+    "date": "2026-06-22",
+    "time": "15:30",
+    "description": "Bedarfsanalyse für kurzfristige Software-Terminplaner-Upgrades zur Messesaison",
+    "customerId": "cust-dennis"
+  },
+  {
+    "id": "appt-14",
+    "title": "Infrastruktur-Audit Petrov IT",
+    "date": "2026-06-23",
+    "time": "12:00",
+    "description": "Sicherheits-Review der dezentralen Backups im Tresor-System",
+    "customerId": "cust-elena"
+  },
+  {
+    "id": "appt-15",
+    "title": "Webshop Core ERP Abgleich",
+    "date": "2026-06-24",
+    "time": "14:00",
+    "description": "Abstimmung der Lagerdaten-Schnittstellen für Gastronomiebedarf",
+    "customerId": "cust-philipp"
+  },
+  {
+    "id": "appt-16",
+    "title": "Dokumenten-Portal Ersteinrichtung",
+    "date": "2026-06-25",
+    "time": "09:00",
+    "description": "Bedarfsprüfung zur DSGVO-konformen Belegübermittlung bei Bauprojekten",
+    "customerId": "cust-kristina"
+  },
+  {
+    "id": "appt-17",
+    "title": "Terminkalender Customizing",
+    "date": "2026-06-26",
+    "time": "08:30",
+    "description": "Einrichtung der Google-Calendar API Brücke für Techniker-Einsätze vor Ort",
+    "customerId": "cust-jan"
+  },
+  {
+    "id": "appt-18",
+    "title": "DSGVO-Verfahrensverzeichnis Audit",
+    "date": "2026-06-29",
+    "time": "11:00",
+    "description": "Schluss-Konformitätscheck für Personalvermittlungs-Schnittstellen",
+    "customerId": "cust-sabine"
+  },
+  {
+    "id": "appt-19",
+    "title": "Materialdaten-Freigabe Solarpark",
+    "date": "2026-06-30",
+    "time": "16:15",
+    "description": "Prüfung und Freigabe eingereichter Baupläne und Berechnungen im Safe Belege-Bereich",
+    "customerId": "cust-patrick"
+  },
+  {
+    "id": "appt-20",
+    "title": "Webshop-GoLive ERP",
+    "date": "2026-07-01",
+    "time": "10:00",
+    "description": "Live-Schaltung und Echtzeittests der Kreditkarten-Zahlungsabwicklung",
+    "customerId": "cust-verena"
+  },
+  {
+    "id": "appt-21",
+    "title": "Schnitt-Besprechung Holzbau",
+    "date": "2026-07-02",
+    "time": "13:30",
+    "description": "Abschlussbesprechung über die Bereitstellung geschützter CAD-Daten",
+    "customerId": "cust-tim"
+  }
+]

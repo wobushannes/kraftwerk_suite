@@ -1,0 +1,212 @@
+[
+  {
+    "id": "prod-cms-core",
+    "name": "Aura Suite Enterprise Jahreslizenz",
+    "sku": "CMS-ENT-001",
+    "description": "Vollständige Jahreslizenz inklusive aller Core-Updates, unlimitierter Mandantenspeicher-Kapazität und SSL-Integritätsprüfung.",
+    "price": 1499,
+    "stock": 99,
+    "category": "Software & Lizenzen",
+    "status": "In Stock"
+  },
+  {
+    "id": "prod-cms-booking",
+    "name": "Aura Booking Pro Add-on",
+    "sku": "CMS-BKP-005",
+    "description": "Ermöglicht Online-Terminbuchen direkt im Frontend, automatische Synchronisation mit dem Kalender und E-Mail-Notizen.",
+    "price": 289,
+    "stock": 150,
+    "category": "Software & Lizenzen",
+    "status": "In Stock"
+  },
+  {
+    "id": "prod-cms-shop",
+    "name": "Aura Webshop Core Add-on",
+    "sku": "CMS-SHP-002",
+    "description": "E-Commerce Modul inklusive Echtzeit-Lagerbestand, Checkout und integriertem Stripe/PayPal Gateway.",
+    "price": 499,
+    "stock": 45,
+    "category": "E-Commerce",
+    "status": "In Stock"
+  },
+  {
+    "id": "prod-cms-ai",
+    "name": "Aura AI Business Assistant",
+    "sku": "CMS-AI-009",
+    "description": "Künstliche Intelligenz zur automatischen Wissensanlernung und Klärung von ungelösten Mandantenfragen rund um die Uhr.",
+    "price": 199,
+    "stock": 200,
+    "category": "Enterprise Integration",
+    "status": "In Stock"
+  },
+  {
+    "id": "prod-seo-module",
+    "name": "Aura SEO & Analytics Suite",
+    "sku": "SEO-OPT-012",
+    "description": "Zusatzmodul für automatische Metatag-Optimierung, XML-Sitemap-Generator und integrierte Google Search Console Berichte.",
+    "price": 149,
+    "stock": 350,
+    "category": "Software & Lizenzen",
+    "status": "In Stock"
+  },
+  {
+    "id": "prod-video-portal",
+    "name": "Aura Video-Schnittstelle & Cloud-Encoder",
+    "sku": "VID-ENC-088",
+    "description": "Erweitert den Kundenbereich um ein Videoportal mit vollautomatischer Transkodierung und adaptivem MP4-Streaming.",
+    "price": 349,
+    "stock": 120,
+    "category": "Software & Lizenzen",
+    "status": "In Stock"
+  },
+  {
+    "id": "prod-support-gold",
+    "name": "Premium Support Gold (12 Monate)",
+    "sku": "SUP-GLD-247",
+    "description": "Exklusiver Telefonsupport rund um die Uhr, Reaktionszeit unter 2 Stunden, persönlicher Key-Account Manager.",
+    "price": 899,
+    "stock": 50,
+    "category": "Dienstleistungen",
+    "status": "In Stock"
+  },
+  {
+    "id": "prod-consulting-pkg",
+    "name": "Digitalisierungs-Workshop & Setup vor Ort",
+    "sku": "SRV-CON-003",
+    "description": "Tages-Workshop bei Ihnen vor Ort (8 Stunden) zur Prozessanalyse, Strukturierung des CRM-Portals und Mitarbeiter-Schulung.",
+    "price": 1850,
+    "stock": 25,
+    "category": "Dienstleistungen",
+    "status": "In Stock"
+  },
+  {
+    "id": "prod-key-yubi",
+    "name": "Yubico YubiKey 5 NFC Hardware-Token",
+    "sku": "SEC-YUB-055",
+    "description": "Hardware-Sicherheitsschlüssel für hochsichere FIDO2/WebAuthn Zwei-Faktor-Authentifizierung im Admin-Portal.",
+    "price": 59,
+    "stock": 1200,
+    "category": "Hardware & Sicherheit",
+    "status": "In Stock"
+  },
+  {
+    "id": "prod-server-mini",
+    "name": "Aura Local Secure Edge Server Mini",
+    "sku": "HW-EDG-001",
+    "description": "Kompakter lüfterloser Edge-Mini-PC. Vorkonfiguriertes Linux-System mit AES-Verschlüsselung zur lokalen Daten-Hostingsicherung vor Ort.",
+    "price": 699,
+    "stock": 18,
+    "category": "Hardware & Sicherheit",
+    "status": "In Stock"
+  },
+  {
+    "id": "prod-cloud-sync",
+    "name": "Aura Hybrid Cloud Sync Connector",
+    "sku": "CMS-CLD-302",
+    "description": "Intelligenter Bridge-Dienst zur verschlüsselten Synchronisierung Ihrer lokalen JSON-Dateien mit einem ISO-27001 zertifizierten Cloud-Storage.",
+    "price": 129,
+    "stock": 500,
+    "category": "Enterprise Integration",
+    "status": "In Stock"
+  },
+  {
+    "id": "prod-newsletter-addon",
+    "name": "Aura Newsletter & Marketing Engine",
+    "sku": "CMS-MKT-077",
+    "description": "Mailings direkt aus dem CRM versenden. Inklusive DSGVO-Einwilligungsverfahren, Bounce-Management und Drag-and-Drop Editor.",
+    "price": 189,
+    "stock": 1500,
+    "category": "Marketing & Vertrieb",
+    "status": "In Stock"
+  },
+  {
+    "id": "prod-contract-signing",
+    "name": "Aura Digital Signature Add-on",
+    "sku": "CMS-SIG-044",
+    "description": "Erlaubt rechtskonforme, digitale Signaturen (eIDAS konform) von Verträgen und Freigaben direkt im Webbrowser des Mandanten.",
+    "price": 249,
+    "stock": 200,
+    "category": "Vertragsmanagement",
+    "status": "In Stock"
+  },
+  {
+    "id": "prod-accounting-api",
+    "name": "Aura DATEV & Lexoffice Invoicing Bridge",
+    "sku": "CMS-ACC-091",
+    "description": "Modul zur automatischen Rechnungsübergabe und Synchronisierung von Zahlungsstatus mit führenden Buchhaltungsprogrammen.",
+    "price": 159,
+    "stock": 120,
+    "category": "Enterprise Integration",
+    "status": "In Stock"
+  },
+  {
+    "id": "prod-whatsapp-api",
+    "name": "WhatsApp Business API Schnittstelle",
+    "sku": "CMS-WHP-111",
+    "description": "Automatisierter Versand von Benachrichtigungen, Terminerinnerungen und Chatbot-Interaktionen direkt auf das Kunden-Smartphone.",
+    "price": 319,
+    "stock": 80,
+    "category": "Marketing & Vertrieb",
+    "status": "In Stock"
+  },
+  {
+    "id": "prod-hardware-vault",
+    "name": "Aura Physical Security Vault S",
+    "sku": "SEC-VLT-102",
+    "description": "Datensicherungs-Festplatte mit mechanischer Tastatureingabe für PIN. 1TB SSD zur offline Lagerung verschlüsselter Backups im Firmentresor.",
+    "price": 279,
+    "stock": 35,
+    "category": "Hardware & Sicherheit",
+    "status": "In Stock"
+  },
+  {
+    "id": "prod-hrm-addon",
+    "name": "Aura Team & HRM Workforce Planner",
+    "sku": "CMS-HRM-013",
+    "description": "Zeiterfassungs-, Urlaubsplanungs- und Mitarbeiterverwaltungs-Erweiterung für das interne Firmenkontrollzentrum.",
+    "price": 229,
+    "stock": 400,
+    "category": "Software & Lizenzen",
+    "status": "In Stock"
+  },
+  {
+    "id": "prod-lead-booster",
+    "name": "Aura B2B Lead Booster & Scraper",
+    "sku": "CMS-LDB-501",
+    "description": "Automatisiertes Widget für Ihr öffentliches Webportal zur Generierung qualifizierter Leads durch interaktive ROI-Kalkulatoren.",
+    "price": 169,
+    "stock": 90,
+    "category": "Marketing & Vertrieb",
+    "status": "In Stock"
+  },
+  {
+    "id": "prod-translation-module",
+    "name": "Aura Multilingual Translation Engine",
+    "sku": "CMS-TRN-040",
+    "description": "Ermöglicht automatische, datenschutzkonforme Übersetzung des Frontends und der Support-Antworten in 18 europäische Sprachen via KI-Modelle.",
+    "price": 99,
+    "stock": 300,
+    "category": "Enterprise Integration",
+    "status": "In Stock"
+  },
+  {
+    "id": "prod-gdpr-audit",
+    "name": "Dienstleistung: DSGVO-Konformitäts-Audit",
+    "sku": "SRV-GDPR-002",
+    "description": "3-stündiges Remote-Review mit unserem zertifizierten Datenschützer zur formalen Freigabe des Portals für den EU-Datenschutzraum.",
+    "price": 549,
+    "stock": 10,
+    "category": "Dienstleistungen",
+    "status": "In Stock"
+  },
+  {
+    "id": "prod-backup-cloud-vault",
+    "name": "Secure Cloud Backup Space (100GB)",
+    "sku": "CLD-VLT-100",
+    "description": "Jährlich abgerechneter, hochsicherer Cloud-Backup Speicherplatz auf deutschem Serverstandort zur Notfall-Wiederherstellung im Desaster-Fall.",
+    "price": 89,
+    "stock": 2500,
+    "category": "Enterprise Integration",
+    "status": "In Stock"
+  }
+]

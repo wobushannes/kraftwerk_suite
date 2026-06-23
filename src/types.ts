@@ -43,6 +43,10 @@ export interface UploadedFile {
   uploadDate: string;
   dataUrl?: string; // If actual file was uploaded
   adminNote?: string;
+  isEncrypted?: boolean;
+  encryptionAlgorithm?: string;
+  fileHash?: string; // SHA-256 hash of encrypted contents (for integrity checks)
+  lastEncryptedAt?: string; // Timestamp of the last encryption event
   status: 'Eingereicht' | 'In Bearbeitung' | 'Genehmigt' | 'Abgelehnt';
   signature?: {
     signedByName: string;
@@ -267,6 +271,8 @@ export interface SystemSettings {
   publicWidgetsOrder?: string[];
   publicWidgetsVisibility?: Record<string, boolean>;
   publicLayoutModusEnabled?: boolean;
+  autoBackupsEnabled?: boolean;
+  autoBackupPassphrase?: string;
 }
 
 export interface CRMData {
@@ -281,6 +287,7 @@ export interface CRMData {
   products?: Product[];
   orders?: Order[];
   blogPosts?: BlogPost[];
+  blogPost?: BlogPost[];
   auditLogs?: AuditLog[];
   settings?: SystemSettings;
   suppliers?: Supplier[];

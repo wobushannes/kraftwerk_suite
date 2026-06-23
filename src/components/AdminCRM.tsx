@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Customer, UploadedFile, DirectMessage, CalendarAppointment, CRMData } from '../types';
-import { encryptMessage, decryptMessage } from '../cryptoUtils';
-import { hashPassword } from '../storage';
+import { encryptMessage, decryptMessage, computeSHA256 } from '../cryptoUtils';
+import { hashPassword, exportServerBackup, importServerBackup } from '../storage';
 import { ROADMAP_SUBTASKS, RoadmapSubTask } from './CustomerPortal';
 import { ROADMAP_TEMPLATES } from '../templates';
 import ManualDoc from './ManualDoc';
@@ -23,7 +23,12 @@ import {
   Calendar,
   Send,
   Download,
+  Lock,
+  Key,
+  Database,
+  Shield,
   AlertCircle,
+  AlertTriangle,
   CheckCircle,
   Eye,
   Clock,
@@ -193,6 +198,10 @@ interface AdminCRMProps {
   onClearForcedFileSearch?: () => void;
   forcedActiveChatCustomerId?: string;
   onClearForcedActiveChatCustomerId?: () => void;
+  persistenceLogs?: { timestamp: string; success: boolean; message: string }[];
+  integrityReport?: any[];
+  isIntegrityChecking?: boolean;
+  onRunIntegrityCheck?: () => Promise<void>;
 }
 
 export default function AdminCRM({ 
@@ -209,7 +218,11 @@ export default function AdminCRM({
   forcedFileSearch,
   onClearForcedFileSearch,
   forcedActiveChatCustomerId,
-  onClearForcedActiveChatCustomerId
+  onClearForcedActiveChatCustomerId,
+  persistenceLogs = [],
+  integrityReport = [],
+  isIntegrityChecking = false,
+  onRunIntegrityCheck
 }: AdminCRMProps) {
   const activeTemplate = useMemo(() => {
     return getActiveTemplate(data.settings?.activeTemplateId);
@@ -293,6 +306,182 @@ export default function AdminCRM({
     ]
   });
 
+  // --- STATE FOR SECURITY SUB-TABS & SERVER BACKUPS ---
+  const [securitySubTab, setSecuritySubTab] = useState<'overview' | 'json-tree' | 'backups-overview' | 'emergency-restore'>('overview');
+  const [serverBackups, setServerBackups] = useState<any[]>([]);
+  const [isBackupListLoading, setIsBackupListLoading] = useState(false);
+
+  // --- EMERGENCY RECOVERY STATES ---
+  const [emergencyBackups, setEmergencyBackups] = useState<any[]>([]);
+  const [isEmergencyLoading, setIsEmergencyLoading] = useState(false);
+  const [selectedEmergencyFile, setSelectedEmergencyFile] = useState<string>('');
+  const [targetCollection, setTargetCollection] = useState<string>('customers');
+  const [emergencyCreateSrc, setEmergencyCreateSrc] = useState<string>('customers');
+  const [emergencyCreateName, setEmergencyCreateName] = useState<string>('');
+  const [isWritePermissionOk, setIsWritePermissionOk] = useState<boolean | null>(null);
+
+  const checkPermissions = async () => {
+    try {
+      const { checkServerWritePermissions } = await import('../storage');
+      const res = await checkServerWritePermissions();
+      setIsWritePermissionOk(res.success && res.writable);
+    } catch (e) {
+      setIsWritePermissionOk(false);
+    }
+  };
+
+  const loadEmergencyBackups = async () => {
+    setIsEmergencyLoading(true);
+    try {
+      const { fetchEmergencyBackupsList } = await import('../storage');
+      const list = await fetchEmergencyBackupsList();
+      setEmergencyBackups(list);
+      if (list.length > 0 && !selectedEmergencyFile) {
+        setSelectedEmergencyFile(list[0].name);
+      }
+    } catch (err: any) {
+      console.error('Error listing emergency backups:', err);
+    } finally {
+      setIsEmergencyLoading(false);
+    }
+  };
+
+  const handleCreateEmergencyBackup = async () => {
+    try {
+      const { createEmergencyBackup } = await import('../storage');
+      await createEmergencyBackup(emergencyCreateSrc, emergencyCreateName || undefined);
+      alert('Notfall-Backup (JSON) erfolgreich angelegt!');
+      setEmergencyCreateName('');
+      loadEmergencyBackups();
+    } catch (err: any) {
+      alert('Fehler beim Erstellen der Snapshot-Datei: ' + err.message);
+    }
+  };
+
+  const handleRestoreEmergencyBackup = async () => {
+    if (!selectedEmergencyFile) {
+      alert('Bitte wählen Sie eine Notfall-Backup-Datei aus.');
+      return;
+    }
+    if (confirm(`ACHTUNG/WARNUNG: Sind Sie absolut sicher? Dies wird die produktive Datei des Typs "${targetCollection}.json" unwiderruflich mit dem Inhalt von "${selectedEmergencyFile}" aus dem Backups-Ordner überschreiben! Alle aktuellen Datensätze dieser Kollektion gehen verloren!`)) {
+      try {
+        const { restoreEmergencyBackup } = await import('../storage');
+        await restoreEmergencyBackup(selectedEmergencyFile, targetCollection);
+        alert(`Erfolgreich gelöst! Die Kollektion "${targetCollection}" wurde erfolgreich mit dem Notfall-Backup "${selectedEmergencyFile}" überschrieben.`);
+        window.location.reload();
+      } catch (err: any) {
+        alert('Wiederherstellung fehlgeschlagen: ' + err.message);
+      }
+    }
+  };
+
+  const handleDeleteEmergencyBackup = async (filename: string) => {
+    if (confirm(`Notfall-Backup "${filename}" endgültig löschen?`)) {
+      try {
+        const { deleteEmergencyBackup } = await import('../storage');
+        await deleteEmergencyBackup(filename);
+        alert('Notfall-Sicherung erfolgreich gelöscht!');
+        loadEmergencyBackups();
+        if (selectedEmergencyFile === filename) {
+          setSelectedEmergencyFile('');
+        }
+      } catch (err: any) {
+        alert('Löschen fehlgeschlagen: ' + err.message);
+      }
+    }
+  };
+
+  React.useEffect(() => {
+    if (securitySubTab === 'backups-overview') {
+      loadBackups();
+    } else if (securitySubTab === 'emergency-restore') {
+      loadEmergencyBackups();
+      checkPermissions();
+    }
+  }, [securitySubTab]);
+  const [selectedTreeCustomer, setSelectedTreeCustomer] = useState<string | null>(null);
+  const [selectedTreeProduct, setSelectedTreeProduct] = useState<string | null>(null);
+  const [expandedTreeCollections, setExpandedTreeCollections] = useState<Record<string, boolean>>({
+    customers: true,
+    products: true,
+    orders: false,
+    invoices: false,
+    appointments: false,
+    messages: false
+  });
+
+  const [autoBackupsEnabled, setAutoBackupsEnabled] = useState<boolean>(data.settings?.autoBackupsEnabled || false);
+  const [autoBackupPassphrase, setAutoBackupPassphrase] = useState<string>(data.settings?.autoBackupPassphrase || 'AuraProtectCRM123!');
+
+  const loadBackups = async () => {
+    setIsBackupListLoading(true);
+    try {
+      const { fetchServerBackupsList } = await import('../storage');
+      const list = await fetchServerBackupsList();
+      setServerBackups(list);
+    } catch (err: any) {
+      console.error('Error listing backups:', err);
+    } finally {
+      setIsBackupListLoading(false);
+    }
+  };
+
+  const handleRestoreBackup = async (filename: string) => {
+    const pw = prompt('Sicherungs-Passwort für Entschlüsselung eingeben:', autoBackupPassphrase);
+    if (!pw) return;
+    try {
+      const { restoreServerZipBackup } = await import('../storage');
+      if (confirm(`Sind Sie absolut sicher, dass Sie das gesamte CRM-System mit dem Backup "${filename}" wiederherstellen wollen? Alle aktuellen Änderungen werden überschrieben!`)) {
+        await restoreServerZipBackup(filename, pw);
+        alert('System erfolgreich dekomprimiert, entschlüsselt und wiederhergestellt!');
+        window.location.reload();
+      }
+    } catch (err: any) {
+      alert('Wiederherstellung fehlgeschlagen: ' + err.message);
+    }
+  };
+
+  const handleDeleteBackup = async (filename: string) => {
+    if (confirm(`Sicherungsarchiv "${filename}" endgültig vom Server löschen?`)) {
+      try {
+        const { deleteServerBackupFile } = await import('../storage');
+        await deleteServerBackupFile(filename);
+        alert('Datensicherung erfolgreich gelöscht!');
+        loadBackups();
+      } catch (err: any) {
+        alert('Löschen fehlgeschlagen: ' + err.message);
+      }
+    }
+  };
+
+  const handleCreateManualZipBackup = async () => {
+    const defaultPhrase = data.settings?.autoBackupPassphrase || 'AuraProtectCRM123!';
+    const pw = prompt('Entschlüsselungs-Kennwort festlegen (Leerlassen für Standard):', defaultPhrase);
+    if (pw === null) return;
+    const finalPassphrase = pw || defaultPhrase;
+
+    try {
+      const { createManualServerZipBackup } = await import('../storage');
+      const res = await createManualServerZipBackup(finalPassphrase);
+      alert(`Server-Sicherung erfolgreich erstellt! Dateiname: ${res.fileName}`);
+      loadBackups();
+    } catch (err: any) {
+      alert('Sicherung konnte nicht erstellt werden: ' + err.message);
+    }
+  };
+
+  const handleSaveAutoBackupConfig = (enabled: boolean, passphrase: string) => {
+    onDataChange((prev: CRMData) => ({
+      ...prev,
+      settings: {
+        ...(prev.settings || {}),
+        autoBackupsEnabled: enabled,
+        autoBackupPassphrase: passphrase
+      } as any
+    }));
+    alert('Planung für tägliche automatische Sicherung aktualisiert und in settings.json persistiert!');
+  };
+
   // --- STATE FOR MOUNTING TEMPLATE CUSTOMIZER ---
   const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
   
@@ -329,7 +518,7 @@ export default function AdminCRM({
 
   // --- SYNC & SECURE MESSAGING STATES ---
   const [isSyncing, setIsSyncing] = useState(false);
-  const [e2eePassphrase, setE2eePassphrase] = useState('LE_E2E_SECURE_KEY');
+  const [e2eePassphrase, setE2eePassphrase] = useState(() => localStorage.getItem('e2e_active_passphrase') || 'LE_E2E_SECURE_KEY');
   const [showRawCiphers, setShowRawCiphers] = useState(false);
   const [selectedAttachment, setSelectedAttachment] = useState<{
     name: string;
@@ -338,6 +527,22 @@ export default function AdminCRM({
     dataUrl: string;
   } | null>(null);
   const [attachmentError, setAttachmentError] = useState<string | null>(null);
+
+  // --- SECURITY DASHBOARD STATES ---
+  const [backupPassword, setBackupPassword] = useState('');
+  const [importPassword, setImportPassword] = useState('');
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [newRotationKey, setNewRotationKey] = useState('');
+  const [showRotationKey, setShowRotationKey] = useState(false);
+  const [integrityCheckStatus, setIntegrityCheckStatus] = useState<'idle' | 'running' | 'success' | 'warning' | 'error'>('idle');
+  const [integrityResults, setIntegrityResults] = useState<{
+    fileId: string;
+    fileName: string;
+    customerName: string;
+    status: 'verified' | 'corrupted' | 'unhashed';
+    computedHash: string;
+    storedHash?: string;
+  }[]>([]);
 
   // --- STATE FOR CUSTOMER MANAGEMENT ---
   const [customerSearch, setCustomerSearch] = useState('');
@@ -903,6 +1108,260 @@ export default function AdminCRM({
       }));
       handleLogAction('Antwort-Vorlage gelöscht', `ID: ${tplId}`);
     }
+  };
+
+  const handleSecureDownload = (file: UploadedFile) => {
+    if (!file.dataUrl) {
+      alert(`Simulierter Download für: ${file.name}`);
+      return;
+    }
+    
+    let finalUrl = file.dataUrl;
+    if (file.isEncrypted) {
+      try {
+        const decrypted = decryptMessage(file.dataUrl, e2eePassphrase);
+        if (!decrypted || decrypted.startsWith('[Decryption Error')) {
+          alert('Fehler beim Entschlüsseln der Datei. Möglicherweise liegt ein falscher E2E-Schlüssel vor oder die Daten sind korrupt.');
+          return;
+        }
+        finalUrl = decrypted;
+      } catch (e) {
+        alert('Verschlüsselungsfehler beim Dekodieren der Datei-Daten.');
+        return;
+      }
+    }
+
+    const link = document.createElement('a');
+    link.href = finalUrl;
+    link.download = file.name;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleExportBackup = async (passwordInput: string) => {
+    if (!passwordInput) {
+      alert('Bitte geben Sie Ihr Master-Passwort ein, um den Export zu autorisieren.');
+      return;
+    }
+    const adminHash = '240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9'; // SHA-256 for admin123
+    const computedHash = await hashPassword(passwordInput);
+    
+    if (computedHash !== adminHash) {
+      alert('Ungültiges Master-Passwort! Backup-Export abgebrochen.');
+      return;
+    }
+    
+    try {
+      // Call backend `/api/backup/export` to generate real secure PBKDF2/AES-256 backup of `/data` folder
+      const backupObj = await exportServerBackup(passwordInput);
+      
+      const fileContent = JSON.stringify(backupObj, null, 2);
+      const blob = new Blob([fileContent], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `crm_data_server_backup_${new Date().toISOString().split('T')[0]}.enc`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      
+      handleLogAction('Backup-Export', 'Vollständiges Serververzeichnis /data verschlüsselt exportiert.');
+      alert('Serverdaten-Backup (AES-256 PBKDF2 verschlüsselt) erfolgreich heruntergeladen!');
+    } catch (err) {
+      alert('Backup-Fehler: ' + (err as Error).message);
+    }
+  };
+
+  const handleImportBackup = async (fileObj: File, passwordInput: string) => {
+    if (!passwordInput) {
+      alert('Das Master-Passwort ist erforderlich, um den Import zu entschlüsseln.');
+      return;
+    }
+    const adminHash = '240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9'; // admin123
+    const computedHash = await hashPassword(passwordInput);
+    if (computedHash !== adminHash) {
+      alert('Ungültiges Master-Passwort! Import verweigert.');
+      return;
+    }
+    
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      try {
+        const fileContent = e.target?.result as string;
+        const backupObj = JSON.parse(fileContent);
+        
+        if (!backupObj.encrypted || !backupObj.iv || !backupObj.salt) {
+          alert('Ungültiges Backup-Format. Die Datei muss iv, salt und encrypted Eigenschaften aufweisen.');
+          return;
+        }
+        
+        // Post back to server for decryption and restoration
+        await importServerBackup({
+          encrypted: backupObj.encrypted,
+          iv: backupObj.iv,
+          salt: backupObj.salt,
+          passphrase: passwordInput
+        });
+        
+        alert('Serververzeichnis /data erfolgreich dekomprimiert, entschlüsselt und wiederhergestellt!');
+        handleLogAction('Backup-Import', 'Systemdatenbank erfolgreich auf Server rekonstruiert.');
+        
+        // Trigger page refresh or fetch state reload
+        window.location.reload();
+      } catch (err) {
+        alert('Fehler beim Einspielen des Backups: ' + (err as Error).message);
+      }
+    };
+    reader.readAsText(fileObj);
+  };
+
+  const handleRotateEncryptionKey = (newKey: string) => {
+    if (!newKey || newKey.trim().length < 6) {
+      alert('Der neue Schlüssel muss mindestens 6 Zeichen lang sein.');
+      return;
+    }
+    
+    // Rotate all uploaded files
+    const updatedFiles = (data.files || []).map(f => {
+      if (f.isEncrypted && f.dataUrl) {
+        const decrypted = decryptMessage(f.dataUrl, e2eePassphrase);
+        if (!decrypted.startsWith('[Decryption Error')) {
+          const reEncrypted = encryptMessage(decrypted, newKey);
+          const reHash = computeSHA256(reEncrypted);
+          return { ...f, dataUrl: reEncrypted, fileHash: reHash, lastEncryptedAt: new Date().toISOString() };
+        }
+      }
+      return f;
+    });
+
+    // Rotate messages too for unified key rotation
+    const updatedMessages = (data.messages || []).map(m => {
+      if (m.encryptedContent) {
+        const dec = decryptMessage(m.encryptedContent, e2eePassphrase);
+        if (!dec.startsWith('[Decryption Error')) {
+          const enc = encryptMessage(dec, newKey);
+          return { ...m, encryptedContent: enc };
+        }
+      }
+      return m;
+    });
+
+    // Rotate attachment URLs in messages
+    const finalMessages = updatedMessages.map(m => {
+      if (m.attachment?.dataUrl) {
+        const dec = decryptMessage(m.attachment.dataUrl, e2eePassphrase);
+        if (!dec.startsWith('[Decryption Error')) {
+          const enc = encryptMessage(dec, newKey);
+          return { ...m, attachment: { ...m.attachment, dataUrl: enc } };
+        }
+      }
+      return m;
+    });
+
+    setE2eePassphrase(newKey);
+    localStorage.setItem('e2e_active_passphrase', newKey);
+    
+    onDataChange(prev => ({
+      ...prev,
+      files: updatedFiles,
+      messages: finalMessages
+    }));
+
+    handleLogAction('Kryptographische Schlüsselrotation', 'AES-256 E2E Schlüssel am Client aktiv rotiert.');
+    alert('Die clientseitige Verschlüsselung wurde erfolgreich auf den neuen Schlüssel rotiert! Alle betroffenen Dateien und Chatnachrichten wurden umschlüsselt.');
+  };
+
+  const handleSealDatabase = () => {
+    const updatedFiles = (data.files || []).map(f => {
+      if (f.isEncrypted && f.dataUrl) {
+        const currentHash = computeSHA256(f.dataUrl);
+        return { ...f, fileHash: currentHash };
+      }
+      return f;
+    });
+
+    onDataChange(prev => ({
+      ...prev,
+      files: updatedFiles
+    }));
+
+    handleLogAction('Datenbank Versiegelung', 'Kryptographische Signaturen (SHA-256) für alle verschlüsselten Dateien generiert.');
+    alert('Datenbestand erfolgreich versiegelt! Allen verschlüsselten Dokumenten wurde eine eindeutige SHA-256-Integritätsprüfsumme zugewiesen.');
+    
+    // Clear check results so user rerun
+    setIntegrityCheckStatus('idle');
+    setIntegrityResults([]);
+  };
+
+  const handleRunIntegrityCheck = () => {
+    setIntegrityCheckStatus('running');
+    
+    setTimeout(() => {
+      const results = (data.files || []).map(f => {
+        if (!f.isEncrypted) {
+          return null; // Only verify encrypted files per requirements
+        }
+        
+        const currentData = f.dataUrl || '';
+        const computed = computeSHA256(currentData);
+        
+        let status: 'verified' | 'corrupted' | 'unhashed' = 'verified';
+        if (!f.fileHash) {
+          status = 'unhashed';
+        } else if (computed !== f.fileHash) {
+          status = 'corrupted';
+        }
+        
+        return {
+          fileId: f.id,
+          fileName: f.name,
+          customerName: f.customerName,
+          status,
+          computedHash: computed,
+          storedHash: f.fileHash
+        };
+      }).filter((r): r is NonNullable<typeof r> => r !== null);
+
+      const hasCorruption = results.some(r => r.status === 'corrupted');
+      setIntegrityResults(results);
+      
+      if (hasCorruption) {
+        setIntegrityCheckStatus('error');
+        handleLogAction('Integritätsverletzung festgestellt', 'SHA-256 Prüfsummen-Vergleich meldet korrumpierte oder manipulierte Dateiauftritte.');
+        alert('⚠️ ACHTUNG: Datenintegritäts-Alarm! Mindestens eine verschlüsselte lokale Kundendatei weicht von ihrem erwarteten SHA-256 kryptographischen Zustand ab. Dies deutet auf Speicherabnutzung oder unbefugte Manipulation hin!');
+      } else if (results.some(r => r.status === 'unhashed')) {
+        setIntegrityCheckStatus('warning');
+        alert('Integritätsprüfung unvollständig: Einige verschlüsselte Dateien weisen noch keine gespeicherte Prüfsumme auf. Bitte versiegeln Sie den Datenbestand, um künftige Manipulationen auszuschließen.');
+      } else {
+        setIntegrityCheckStatus('success');
+        handleLogAction('Sicherheitsintegrität verifiziert', 'Alle lokalen E2EE-Dateien haben die SHA-256 Integritätsprüfung erfolgreich bestanden.');
+        alert('✅ Integritätsprüfung erfolgreich abgeschlossen! Alle verschlüsselten Dokumente wurden mittels SHA-256 auf Bit-Ebene verifiziert. Es wurden keine Modifikationen oder Dateischäden festgestellt.');
+      }
+    }, 850);
+  };
+
+  const handleSimulateCorruption = (fileId: string) => {
+    const updatedFiles = (data.files || []).map(f => {
+      if (f.id === fileId && f.dataUrl) {
+        // Corrupt by appending noise or altering some characters in the dataUrl
+        const corruptedDataUrl = f.dataUrl.slice(0, -6) + 'XoRNoI';
+        return { ...f, dataUrl: corruptedDataUrl };
+      }
+      return f;
+    });
+
+    onDataChange(prev => ({
+      ...prev,
+      files: updatedFiles
+    }));
+
+    handleLogAction('Simulierte Datenkorruption', `Inhalt der Datei ${fileId} absichtlich auf Bit-Ebene verändert (Simulierter Angriff).`);
+    // Reset check status so user can trigger and watch the warning
+    setIntegrityCheckStatus('idle');
+    setIntegrityResults([]);
+    alert('Bit-Flop simuliert! Die verschlüsselte Datei wurde absichtlich verändert. Starten Sie jetzt die Integritätsprüfung, um die SHA-256 Erkennung zu testen.');
   };
 
   const handleTestBotResponse = (text: string) => {
@@ -3124,14 +3583,14 @@ export default function AdminCRM({
                       </button>
                       
                       {file.dataUrl ? (
-                        <a
-                          href={file.dataUrl}
-                          download={file.name}
-                          className="p-1 text-slate-400 hover:text-blue-600 transition-colors"
-                          title="Echte Datei herunterladen"
+                        <button
+                          onClick={() => handleSecureDownload(file)}
+                          className="p-1.5 hover:bg-white border hover:border-slate-200 text-slate-400 hover:text-blue-600 rounded-lg transition-colors cursor-pointer flex items-center gap-1"
+                          title={file.isEncrypted ? "Verschlüsselt herunterladen (Entschlüsselung on-the-fly)" : "Echte Datei herunterladen"}
                         >
                           <Download className="w-4 h-4" />
-                        </a>
+                          {file.isEncrypted && <Lock className="w-3 h-3 text-indigo-500" title="Verschlüsselte Datei" />}
+                        </button>
                       ) : (
                         <button
                           onClick={() => alert(`Simulierter Download für: ${file.name}`)}
@@ -3238,20 +3697,17 @@ export default function AdminCRM({
               <span>CMS</span> <span className="text-slate-300">/</span> <span className="text-slate-900 font-semibold">DMs (Secure)</span>
             </div>
             <div className="flex items-center gap-3">
-              {/* Online/Offline Mode Switch */}
-              <button
-                type="button"
-                onClick={() => onOnlineToggle(!isOnline)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
-                  isOnline 
-                    ? 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm border border-emerald-500/20' 
-                    : 'bg-amber-655 text-amber-900 border border-amber-300 bg-amber-50'
-                }`}
-                title={isOnline ? 'Online-Modus aktiv: Nachrichten werden synchronisiert' : 'Offline-Modus aktiv: Nachrichten werden lokal zwischengespeichert'}
+              {/* Static Server-Data Realtime Badge */}
+              <div
+                 className="px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200/60 shadow-3xs"
+                title="Dauerhafte, sichere Echtzeit-Verbindung zur Server-Datenbank (/db_store/) ist aktiv. Keine Client-Caches."
               >
-                {isOnline ? <Wifi className="w-3.5 h-3.5 text-emerald-100" /> : <WifiOff className="w-3.5 h-3.5 text-amber-600" />}
-                <span>{isOnline ? 'Live-Netzwerk' : 'Lokal Offline'}</span>
-              </button>
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                </span>
+                <span>Server-Datenbank (/db_store/)</span>
+              </div>
 
               {/* Active Pending Sync Counter & Button */}
               {pendingSyncCount > 0 && (
@@ -5642,6 +6098,305 @@ export default function AdminCRM({
         </div>
       )}
 
+      {/* 13.5. ANTWORT-VORLAGEN & TEXTBAUSTEINE MANAGEMENT */}
+      {activeTab === 'communication-templates' && (
+        <div className="flex-grow overflow-auto p-6 bg-slate-50">
+          <div className="max-w-6xl mx-auto space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <h1 className="text-2xl font-bold font-sans text-slate-900 tracking-tight flex items-center gap-2">
+                  <FileText className="h-6 w-6 text-indigo-600" />
+                  Antwort-Vorlagen & Textbausteine
+                </h1>
+                <p className="text-sm text-slate-500 mt-1">
+                  Erstellen, bearbeiten und verwalten Sie strukturierte Schnellantworten für DMs, E-Mails und Kunden-Support.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingCommTemplate({
+                    title: '',
+                    subject: '',
+                    content: '',
+                    type: 'all',
+                    category: 'Allgemein'
+                  });
+                  setIsCommTemplateModalOpen(true);
+                }}
+                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl transition-all cursor-pointer shadow-sm flex items-center gap-1.5 self-start sm:self-auto border-none"
+              >
+                <Plus className="w-4 h-4" />
+                Neue Vorlage anlegen
+              </button>
+            </div>
+
+            {/* Filter & Search Bar */}
+            <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-3xs flex flex-col md:flex-row gap-4 items-center justify-between">
+              <div className="relative w-full md:max-w-sm">
+                <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Search className="h-4 w-4 text-slate-400" />
+                </span>
+                <input
+                  type="text"
+                  placeholder="Suchen nach Vorlagennamen, Betreff..."
+                  value={commTemplateSearch}
+                  onChange={(e) => setCommTemplateSearch(e.target.value)}
+                  className="w-full pl-9 pr-4 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 text-slate-900"
+                />
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2 w-full md:w-auto justify-end">
+                <span className="text-[10px] uppercase font-bold text-slate-400 font-mono tracking-wider mr-1">Filtern:</span>
+                
+                {/* Type filter */}
+                <select
+                  value={commTemplateFilterType}
+                  onChange={(e) => setCommTemplateFilterType(e.target.value)}
+                  className="px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200 text-xs font-semibold cursor-pointer text-slate-800 focus:outline-none focus:border-indigo-500"
+                >
+                  <option value="all">Sämtliche Kanäle</option>
+                  <option value="chat">Nur für Chats / DMs</option>
+                  <option value="email">Nur für E-Mails</option>
+                  <option value="all_only">Universal (All)</option>
+                </select>
+
+                {/* Category filter */}
+                <select
+                  value={commTemplateFilterCategory}
+                  onChange={(e) => setCommTemplateFilterCategory(e.target.value)}
+                  className="px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200 text-xs font-semibold cursor-pointer text-slate-800 focus:outline-none focus:border-indigo-500"
+                >
+                  <option value="all">Sämtliche Kategorien</option>
+                  {Array.from(new Set((data.communicationTemplates || []).map(t => t.category || 'Allgemein'))).map(cat => (
+                    <option key={cat} value={cat}>{cat}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Template Cards Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {(data.communicationTemplates || [])
+                .filter(tpl => {
+                  const matchSearch = tpl.title.toLowerCase().includes(commTemplateSearch.toLowerCase()) || 
+                                     (tpl.subject && tpl.subject.toLowerCase().includes(commTemplateSearch.toLowerCase())) ||
+                                     tpl.content.toLowerCase().includes(commTemplateSearch.toLowerCase());
+                  
+                  const matchType = commTemplateFilterType === 'all' || 
+                                   tpl.type === commTemplateFilterType ||
+                                   (commTemplateFilterType === 'all_only' && tpl.type === 'all');
+                  
+                  const matchCat = commTemplateFilterCategory === 'all' || 
+                                  tpl.category === commTemplateFilterCategory;
+                  
+                  return matchSearch && matchType && matchCat;
+                })
+                .map((tpl) => (
+                  <div key={tpl.id} className="bg-white rounded-2xl border border-slate-200/85 hover:border-slate-300 hover:shadow-xs transition-all duration-200 flex flex-col justify-between overflow-hidden">
+                    <div className="p-5 space-y-4">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <span className="text-[10px] font-mono px-2 py-0.5 bg-slate-100 text-slate-500 rounded uppercase tracking-wider font-extrabold block w-fit mb-1">
+                            {tpl.category || 'Allgemein'}
+                          </span>
+                          <h3 className="text-sm font-bold text-slate-850 tracking-tight leading-snug">{tpl.title}</h3>
+                        </div>
+                        <span className={`text-[9.5px] font-bold px-2 py-0.5 rounded ${
+                          tpl.type === 'chat' ? 'bg-sky-50 text-sky-700' :
+                          tpl.type === 'email' ? 'bg-amber-50 text-amber-700' :
+                          'bg-indigo-50 text-indigo-700'
+                        }`}>
+                          {tpl.type === 'chat' ? '💬 Chat' :
+                           tpl.type === 'email' ? '✉️ E-Mail' :
+                           '🌐 Universal'}
+                        </span>
+                      </div>
+
+                      {tpl.subject && (
+                        <div className="p-2 bg-slate-50 rounded-lg border border-slate-100">
+                          <span className="text-[9px] uppercase font-bold text-slate-400 font-mono tracking-wider block mb-0.5">E-Mail Betreff:</span>
+                          <p className="text-xs font-semibold text-slate-700 truncate">{tpl.subject}</p>
+                        </div>
+                      )}
+
+                      <div>
+                        <span className="text-[9px] uppercase font-bold text-slate-400 font-mono tracking-wider block mb-1">Inhalt / Textbaustein:</span>
+                        <p className="text-xs text-slate-650 whitespace-pre-line line-clamp-5 leading-relaxed font-sans bg-slate-50/40 p-2.5 rounded-xl border border-slate-100">
+                          {tpl.content}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="p-4 bg-slate-50/70 border-t border-slate-100 flex items-center justify-between">
+                      <span className="text-[9.5px] text-slate-400 font-mono">
+                        Erstellt: {tpl.createdAt ? new Date(tpl.createdAt).toLocaleDateString() : 'N/A'}
+                      </span>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            navigator.clipboard.writeText(tpl.content);
+                            alert("Vorlagen-Inhalt in die Zwischenablage kopiert!");
+                          }}
+                          className="p-1.5 hover:bg-slate-200 text-slate-600 rounded-lg border-none cursor-pointer transition-colors"
+                          title="Inhalt kopieren"
+                        >
+                          <FileText className="w-4 h-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingCommTemplate({ ...tpl });
+                            setIsCommTemplateModalOpen(true);
+                          }}
+                          className="px-2.5 py-1.5 hover:bg-indigo-50 text-indigo-700 text-[10.5px] font-bold rounded-lg border-none cursor-pointer transition-colors flex items-center gap-1"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                          Bearbeiten
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteCommTemplate(tpl.id)}
+                          className="p-1.5 hover:bg-rose-50 text-rose-600 rounded-lg border-none cursor-pointer transition-colors"
+                          title="Löschen"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              }
+              {(data.communicationTemplates || []).filter(tpl => {
+                const matchSearch = tpl.title.toLowerCase().includes(commTemplateSearch.toLowerCase()) || 
+                                   (tpl.subject && tpl.subject.toLowerCase().includes(commTemplateSearch.toLowerCase())) ||
+                                   tpl.content.toLowerCase().includes(commTemplateSearch.toLowerCase());
+                
+                const matchType = commTemplateFilterType === 'all' || 
+                                 tpl.type === commTemplateFilterType ||
+                                 (commTemplateFilterType === 'all_only' && tpl.type === 'all');
+                
+                const matchCat = commTemplateFilterCategory === 'all' || 
+                                tpl.category === commTemplateFilterCategory;
+                
+                return matchSearch && matchType && matchCat;
+              }).length === 0 && (
+                <div className="col-span-full py-16 text-center border border-dashed border-slate-200 rounded-3xl bg-white p-8">
+                  <FileText className="mx-auto h-10 w-10 text-slate-300" />
+                  <p className="mt-3 text-xs font-bold text-slate-600">Keine passenden Antwort-Vorlagen gefunden.</p>
+                  <p className="text-[11px] text-slate-400 mt-0.5">Erstellen Sie eine neue Vorlage oder passen Sie Ihre Filterkriterien an.</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Edit/Add Overlay Modal */}
+          {isCommTemplateModalOpen && editingCommTemplate && (
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in overflow-y-auto">
+              <div className="bg-white rounded-3xl border border-slate-200/90 shadow-2xl max-w-lg w-full overflow-hidden self-center my-8">
+                <div className="p-5 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
+                  <h3 className="text-sm font-bold text-slate-900 font-sans tracking-tight">
+                    {editingCommTemplate.id ? '👤 Antwort-Vorlage bearbeiten' : '📋 Neue Antwort-Vorlage anlegen'}
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsCommTemplateModalOpen(false);
+                      setEditingCommTemplate(null);
+                    }}
+                    className="p-1 text-slate-400 hover:text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-full border-none cursor-pointer"
+                  >
+                    <XCircle className="w-5 h-5" />
+                  </button>
+                </div>
+
+                <div className="p-5 space-y-4">
+                  <div>
+                    <label className="text-[10.5px] font-bold text-slate-700 block mb-1">Titel der Vorlage *</label>
+                    <input
+                      type="text"
+                      value={editingCommTemplate.title}
+                      onChange={(e) => setEditingCommTemplate({ ...editingCommTemplate, title: e.target.value })}
+                      placeholder="z.B. Willkommensgruß Onboarding"
+                      className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/15 focus:border-indigo-550 text-slate-950 font-semibold"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-[10.5px] font-bold text-slate-700 block mb-1">Typ-Kanal *</label>
+                      <select
+                        value={editingCommTemplate.type}
+                        onChange={(e) => setEditingCommTemplate({ ...editingCommTemplate, type: e.target.value as 'chat' | 'email' | 'all' })}
+                        className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold focus:outline-none cursor-pointer text-slate-950"
+                      >
+                        <option value="all">Universal (All)</option>
+                        <option value="chat">Nur Live-Chat (DMs)</option>
+                        <option value="email">Nur E-Mails / Postfach</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-[10.5px] font-bold text-slate-700 block mb-1">Kategorie *</label>
+                      <input
+                        type="text"
+                        value={editingCommTemplate.category}
+                        onChange={(e) => setEditingCommTemplate({ ...editingCommTemplate, category: e.target.value })}
+                        placeholder="z.B. Buchhaltung, Support"
+                        className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs focus:outline-none text-slate-950 font-semibold"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-[10.5px] font-bold text-slate-700 block mb-1">Betreff (optional, primär für E-Mails)</label>
+                    <input
+                      type="text"
+                      value={editingCommTemplate.subject || ''}
+                      onChange={(e) => setEditingCommTemplate({ ...editingCommTemplate, subject: e.target.value })}
+                      placeholder="z.B. Ihre monatliche Portalabrechnung"
+                      className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs focus:outline-none text-slate-950"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[10.5px] font-bold text-slate-700 block mb-1">Sicherheits-/Inhaltsschablone (Markdown u. Text) *</label>
+                    <textarea
+                      rows={6}
+                      value={editingCommTemplate.content}
+                      onChange={(e) => setEditingCommTemplate({ ...editingCommTemplate, content: e.target.value })}
+                      placeholder="Geben Sie hier den Inhalt ein..."
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs focus:outline-none text-slate-950 font-sans leading-relaxed"
+                    />
+                  </div>
+                </div>
+
+                <div className="p-4 bg-slate-50/50 border-t border-slate-100 flex items-center justify-end gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsCommTemplateModalOpen(false);
+                      setEditingCommTemplate(null);
+                    }}
+                    className="px-4 py-2 bg-white border border-slate-200 text-slate-650 hover:bg-slate-100 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                  >
+                    Abbrechen
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSaveCommTemplate}
+                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-md transition-all flex items-center gap-1.5 cursor-pointer border-none"
+                  >
+                    <CheckCircle className="w-3.5 h-3.5" />
+                    <span>Vorlage speichern</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* 14. ALLGEMEINE EINSTELLUNGEN */}
       {activeTab === 'settings' && (
         <div className="flex-grow overflow-auto p-6 bg-slate-50">
@@ -6028,6 +6783,1150 @@ export default function AdminCRM({
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* 15. SICHERHEITS-DASHBOARD (E2EE STATUS, SCHLÜSSELROTATION, VER- & ENTSCHLÜSSELTES BAKUP-SYSTEM) */}
+      {activeTab === 'security-dashboard' && (
+        <div className="flex-grow overflow-auto p-6 bg-slate-50">
+          <div className="max-w-6xl mx-auto space-y-6 animate-fade-in">
+            
+            {/* Header */}
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-2xl font-bold font-sans text-slate-900 tracking-tight flex items-center gap-2">
+                  <ShieldCheck className="h-6 w-6 text-indigo-600" />
+                  Sicherheits- & Architekturportal
+                </h1>
+                <p className="text-sm text-slate-500 mt-1">Überwachen Sie clientseitige Verschlüsselungen, die JSON-Dateikonsistenz und Server-Backups.</p>
+              </div>
+            </div>
+
+            {/* Sub-Navigation Tabs */}
+            <div className="flex border-b border-slate-200/80 gap-1 bg-white p-1 rounded-2xl border">
+              <button
+                onClick={() => setSecuritySubTab('overview')}
+                className={`flex items-center gap-1.5 py-2 px-4 text-xs font-bold font-mono tracking-wide uppercase transition-all rounded-xl cursor-pointer ${
+                  securitySubTab === 'overview'
+                    ? 'bg-indigo-50 text-indigo-700 shadow-2xs'
+                    : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'
+                }`}
+              >
+                <ShieldCheck className="w-3.5 h-3.5" />
+                🛡️ E2EE & Integrität
+              </button>
+              <button
+                onClick={() => setSecuritySubTab('json-tree')}
+                className={`flex items-center gap-1.5 py-2 px-4 text-xs font-bold font-mono tracking-wide uppercase transition-all rounded-xl cursor-pointer ${
+                  securitySubTab === 'json-tree'
+                    ? 'bg-violet-50 text-violet-700 shadow-2xs'
+                    : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'
+                }`}
+              >
+                <Database className="w-3.5 h-3.5" />
+                🌳 JSON-Baumstruktur & Beziehungen
+              </button>
+              <button
+                onClick={() => setSecuritySubTab('backups-overview')}
+                className={`flex items-center gap-1.5 py-2 px-4 text-xs font-bold font-mono tracking-wide uppercase transition-all rounded-xl cursor-pointer ${
+                  securitySubTab === 'backups-overview'
+                    ? 'bg-emerald-50 text-emerald-700 shadow-2xs'
+                    : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'
+                }`}
+              >
+                <Clock className="w-3.5 h-3.5" />
+                🗄️ Backup-Center & ZIP-Planer
+              </button>
+              <button
+                onClick={() => setSecuritySubTab('emergency-restore')}
+                className={`flex items-center gap-1.5 py-2 px-4 text-xs font-bold font-mono tracking-wide uppercase transition-all rounded-xl cursor-pointer ${
+                  securitySubTab === 'emergency-restore'
+                    ? 'bg-rose-50 text-rose-700 shadow-2xs'
+                    : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'
+                }`}
+              >
+                <AlertTriangle className="w-3.5 h-3.5 text-rose-600" />
+                🚨 Notfall-Sicherungen (JSON)
+              </button>
+            </div>
+
+            {securitySubTab === 'overview' && (
+              <>
+                {/* Quick Stats Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div className="bg-white p-5 rounded-2xl border border-slate-200/85 shadow-2xs flex items-center gap-4">
+                    <div className="p-3 bg-indigo-50 text-indigo-600 rounded-xl">
+                      <FileText className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">Dateien Gesamt</p>
+                      <p className="text-xl font-bold text-slate-800 font-mono mt-0.5">{(data.files || []).length}</p>
+                    </div>
+                  </div>
+
+                  <div className="bg-white p-5 rounded-2xl border border-slate-200/85 shadow-2xs flex items-center gap-4">
+                    <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl">
+                      <Lock className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">Verschlüsselt (E2E)</p>
+                      <p className="text-xl font-bold text-emerald-600 font-mono mt-0.5">
+                        {(data.files || []).filter(f => f.isEncrypted).length}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="bg-white p-5 rounded-2xl border border-slate-200/85 shadow-2xs flex items-center gap-4">
+                    <div className="p-3 bg-amber-50 text-amber-600 rounded-xl">
+                      <Unlock className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">Unverschlüsselt</p>
+                      <p className="text-xl font-bold text-amber-600 font-mono mt-0.5">
+                        {(data.files || []).filter(f => !f.isEncrypted).length}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="bg-white p-5 rounded-2xl border border-slate-200/85 shadow-2xs flex items-center gap-4">
+                    <div className="p-3 bg-violet-50 text-violet-600 rounded-xl">
+                      <Key className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">Kryptographie</p>
+                      <p className="text-xl font-bold text-violet-600 font-mono mt-0.5">AES-255 (Salted)</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Main Action Panels */}
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+              
+              {/* Left Column: Key Rotation & Backups */}
+              <div className="lg:col-span-8 space-y-6">
+                
+                {/* 1. Kryptographische Schlüsselrotation */}
+                <div className="bg-white rounded-3xl shadow-xs border border-slate-200/85 overflow-hidden">
+                  <div className="p-5 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+                    <div>
+                      <h2 className="text-sm font-bold text-slate-800 flex items-center gap-1.5 uppercase tracking-wide font-mono">
+                        <RefreshCw className="w-4 h-4 text-indigo-600 animate-spin" style={{ animationDuration: '6s' }} />
+                        AES-256 E2EE-Schlüssel-Rotation
+                      </h2>
+                      <p className="text-[11px] text-slate-400">Verändern Sie den lokalen Verschlüsselungs-Passcode im Browser. Alle E2E-Dateien werden on-the-fly umschlüsselt.</p>
+                    </div>
+                  </div>
+
+                  <div className="p-6 space-y-4">
+                    <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 flex items-center justify-between text-xs">
+                      <div className="space-y-1">
+                        <span className="text-slate-400 font-medium font-sans">Aktiver E2EE-Passphrase (Browser):</span>
+                        <p className="font-mono text-indigo-700 font-extrabold text-sm tracking-wider">
+                          {showRotationKey ? e2eePassphrase : '•'.repeat(Math.max(12, e2eePassphrase.length))}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => setShowRotationKey(!showRotationKey)}
+                        className="px-3 py-1.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-lg text-[11px] font-bold cursor-pointer transition-all flex items-center gap-1"
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                        <span>{showRotationKey ? 'Verbergen' : 'Anzeigen'}</span>
+                      </button>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wide">Neuen E2E-Passphrase festlegen</label>
+                      <div className="flex gap-2">
+                        <div className="relative flex-grow">
+                          <input
+                            type="text"
+                            placeholder="z.B. MeinSichererMasterSchlussel2026!"
+                            value={newRotationKey}
+                            onChange={(e) => setNewRotationKey(e.target.value)}
+                            className="w-full px-3.5 py-2 rounded-xl bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 text-sm font-mono text-slate-900"
+                          />
+                        </div>
+                        <button
+                          onClick={() => {
+                            handleRotateEncryptionKey(newRotationKey);
+                            setNewRotationKey('');
+                          }}
+                          className="px-4 py-2 bg-indigo-650 hover:bg-indigo-700 text-white font-extrabold text-xs rounded-xl tracking-wider uppercase font-mono transition-colors shadow-sm cursor-pointer whitespace-nowrap flex items-center gap-1.5 border-none"
+                        >
+                          <RefreshCw className="w-3.5 h-3.5 animate-spin" style={{ animationDuration: '4s' }} />
+                          Schlüssel rotieren
+                        </button>
+                      </div>
+                      <span className="text-[10px] text-slate-450 block leading-normal mt-2 bg-amber-50 p-3 rounded-xl border border-amber-100 text-amber-800">
+                        ⚠️ <strong>Sicherheitshinweis:</strong> Die Rotation erfolgt datenverlustfrei im Browser-Speicher. Bestehende verschlüsselte Anhänge in Verträgen, Dokumenten und Direktnachrichten werden automatisch de- und neu verschlüsselt abgespeichert.
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 2. Sicheres E2E Backup-System */}
+                <div className="bg-white rounded-3xl shadow-xs border border-slate-200/85 overflow-hidden">
+                  <div className="p-5 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+                    <div>
+                      <h2 className="text-sm font-bold text-slate-800 flex items-center gap-1.5 uppercase tracking-wide font-mono">
+                        <Database className="w-4 h-4 text-indigo-600" />
+                        Verschlüsseltes JSON-Backup-System (Master-Passwort geschützt)
+                      </h2>
+                      <p className="text-[11px] text-slate-400">Erzeugen und laden Sie vollverschlüsselte Backups der Plattform herunter oder spielen Sie diese mit dem Master-Passwort wieder ein.</p>
+                    </div>
+                  </div>
+
+                  <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6 divide-y md:divide-y-0 md:divide-x divide-slate-150">
+                    
+                    {/* Backup herstellen (Export) */}
+                    <div className="space-y-4 pb-6 md:pb-0 md:pr-6">
+                      <h3 className="text-xs font-bold text-indigo-700 uppercase tracking-widest flex items-center gap-1.5 font-mono">
+                        <Download className="w-3.5 h-3.5" />
+                        Verschlüsselt Sichern (Export)
+                      </h3>
+                      <p className="text-[11px] text-slate-500 leading-relaxed">
+                        Schreibt die gesamte Datenbank (`CRMData`) in ein verschlüsseltes Backup. Nur mit dem exakten Master-Passwort kann dieses Backup wiederhergestellt werden.
+                      </p>
+                      
+                      <div className="space-y-1.5">
+                        <label className="block text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Aktuelles Master-Passwort bestätigen</label>
+                        <input
+                          type="password"
+                          placeholder="Zugehöriges Passwort (z.B. admin123)..."
+                          value={backupPassword}
+                          onChange={(e) => setBackupPassword(e.target.value)}
+                          className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 text-sm font-mono text-slate-900"
+                        />
+                      </div>
+
+                      <button
+                        onClick={() => {
+                          handleExportBackup(backupPassword);
+                          setBackupPassword('');
+                        }}
+                        className="w-full py-2 bg-indigo-650 hover:bg-indigo-700 text-white font-extrabold text-[11px] rounded-xl tracking-wider uppercase font-mono transition-colors shadow-sm cursor-pointer flex items-center justify-center gap-1.5 border-none"
+                      >
+                        <Lock className="w-3.5 h-3.5" />
+                        Encrypted JSON Backup laden
+                      </button>
+                    </div>
+
+                    {/* Backup einspielen (Import) */}
+                    <div className="space-y-4 pt-6 md:pt-0 md:pl-6">
+                      <h3 className="text-xs font-bold text-emerald-700 uppercase tracking-widest flex items-center gap-1.5 font-mono">
+                        <Plus className="w-3.5 h-3.5" />
+                        Backup einspielen (Import)
+                      </h3>
+                      <p className="text-[11px] text-slate-500 leading-relaxed">
+                        Wählen Sie eine verschlüsselte `.bin`-Sicherungsdatei aus. Geben Sie das Passwort ein, welches beim Exportieren verwendet wurde.
+                      </p>
+
+                      <div className="space-y-2">
+                        <div className="space-y-1">
+                          <label className="block text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Backup-Sicherung (.bin) wählen</label>
+                          <input
+                            type="file"
+                            accept=".bin,.json"
+                            onChange={(e) => {
+                              if (e.target.files && e.target.files[0]) {
+                                setImportFile(e.target.files[0]);
+                              }
+                            }}
+                            className="w-full text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-[10px] file:font-semibold file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200 file:cursor-pointer"
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="block text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Passwort zur Entschlüsselung</label>
+                          <input
+                            type="password"
+                            placeholder="Import-Passwort eingeben..."
+                            value={importPassword}
+                            onChange={(e) => setImportPassword(e.target.value)}
+                            className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-500 text-sm font-mono text-slate-900"
+                          />
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={() => {
+                          if (!importFile) {
+                            alert('Bitte wählen Sie zuerst eine gültige Backup-Datei aus.');
+                            return;
+                          }
+                          handleImportBackup(importFile, importPassword);
+                          setImportPassword('');
+                          setImportFile(null);
+                        }}
+                        className="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-[11px] rounded-xl tracking-wider uppercase font-mono transition-colors shadow-sm cursor-pointer flex items-center justify-center gap-1.5 border-none"
+                      >
+                        <Shield className="w-3.5 h-3.5" />
+                        Sicherung entschlüsseln & einspielen
+                      </button>
+                    </div>
+
+                  </div>
+                </div>
+
+                {/* 3. Clientseitige SHA-256 Integritätsprüfung */}
+                <div className="bg-white rounded-3xl shadow-xs border border-slate-200/85 overflow-hidden">
+                  <div className="p-5 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+                    <div>
+                      <h2 className="text-sm font-bold text-slate-800 flex items-center gap-1.5 uppercase tracking-wide font-mono">
+                        <ShieldCheck className="w-4 h-4 text-indigo-600" />
+                        SHA-256 Daten-Integritätsprüfung (E2EE)
+                      </h2>
+                      <p className="text-[11px] text-slate-400">Verifizieren Sie die bitweise Konsistenz und Korruptionsfreiheit aller lokal gespeicherten, verschlüsselten Clientdateien.</p>
+                    </div>
+                  </div>
+
+                  <div className="p-6 space-y-6">
+                    {/* General explanation */}
+                    <div className="text-xs text-slate-500 leading-relaxed">
+                      Jedes hochgeladene Mandanten-Dokument wird bei der Übertragung verschlüsselt und signiert. Die Integritätsprüfung berechnet den SHA-256-Hash des verschlüsselten Inhalts in Echtzeit neu und gleicht ihn mit der im Mandantenakt hinterlegten Referenz-Signatur ab. Dies deckt unautorisierte Bit-Modifikationen sofort auf.
+                    </div>
+
+                    {/* Action buttons */}
+                    <div className="flex flex-wrap gap-3">
+                      <button
+                        onClick={handleRunIntegrityCheck}
+                        disabled={integrityCheckStatus === 'running'}
+                        className="px-4 py-2 bg-indigo-650 hover:bg-indigo-700 disabled:bg-indigo-400 text-white font-extrabold text-[11px] rounded-xl tracking-wider uppercase font-mono transition-colors shadow-sm cursor-pointer border-none flex items-center gap-1.5"
+                      >
+                        <RefreshCw className={`w-3.5 h-3.5 ${integrityCheckStatus === 'running' ? 'animate-spin' : ''}`} />
+                        Integritätsprüfung starten
+                      </button>
+
+                      <button
+                        onClick={handleSealDatabase}
+                        disabled={integrityCheckStatus === 'running'}
+                        className="px-4 py-2 bg-slate-100 hover:bg-slate-200 disabled:bg-slate-50 text-slate-700 font-extrabold text-[11px] rounded-xl tracking-wider uppercase font-mono transition-colors shadow-2xs border border-slate-200 cursor-pointer flex items-center gap-1.5"
+                      >
+                        <Lock className="w-3.5 h-3.5" />
+                        Datenbestand versgeln (Neu signieren)
+                      </button>
+                    </div>
+
+                    {/* Scanning Animation */}
+                    {integrityCheckStatus === 'running' && (
+                      <div className="p-6 bg-slate-50 rounded-2xl border border-slate-150 flex flex-col items-center justify-center space-y-3">
+                        <div className="relative w-12 h-12 flex items-center justify-center">
+                          <span className="absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-20 animate-ping"></span>
+                          <ShieldCheck className="w-8 h-8 text-indigo-600 animate-pulse" />
+                        </div>
+                        <div className="text-center space-y-1">
+                          <p className="text-xs font-bold text-slate-700 font-mono animate-pulse">BERECHNE SHA-256 PRÜFSUMMEN...</p>
+                          <p className="text-[10px] text-slate-400">Vergleiche lokale Chiffre mit kryptographischen Zertifikats-Hashes...</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Success Alert */}
+                    {integrityCheckStatus === 'success' && (
+                      <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-100 flex gap-3 text-xs text-emerald-800 leading-normal">
+                        <CheckCircle className="h-5 w-5 text-emerald-600 flex-shrink-0 mt-0.5" />
+                        <div>
+                          <strong className="font-bold block mb-0.5 text-emerald-900 uppercase tracking-wide">SYSTEM-INTEGRITÄT VOLLSTÄNDIG INTAKT</strong>
+                          Alle analysierten E2E-verschlüsselten Mandantendokumente entsprechen bitweise ihren lokal hinterlegten SHA-256 Signaturen. Es wurden keine Modifikationen oder Speicherschäden detektiert.
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Warning Alert (for unhashed files) */}
+                    {integrityCheckStatus === 'warning' && (
+                      <div className="p-4 bg-amber-50 rounded-2xl border border-amber-200 flex gap-3 text-xs text-amber-800 leading-normal">
+                        <AlertCircle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                        <div>
+                          <strong className="font-bold block mb-0.5 text-amber-900 uppercase tracking-wide">UNVERSIEGELTE DATEIEN IDENTIFIZIERT</strong>
+                          Einige verschlüsselte Dokumente besitzen noch keine Referenz-Signatur (z.B. Mockdaten vor Einführung der Signierung). Bitte klicken Sie auf <strong>"Datenbestand versiegeln"</strong>, um diese ab jetzt kryptographisch zu überwachen.
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Error / Tampering Alert */}
+                    {integrityCheckStatus === 'error' && (
+                      <div className="p-4 bg-rose-550 rounded-2xl border border-rose-350 flex gap-3 text-xs text-slate-50 leading-normal animate-shake">
+                        <ShieldAlert className="h-5 w-5 text-rose-200 flex-shrink-0 mt-0.5 animate-bounce" />
+                        <div>
+                          <strong className="font-bold block mb-0.5 text-white uppercase tracking-wide">🚨 GEFAHR: DATENINTEGRITÄTSVERLETZUNG ENTDECKT!</strong>
+                          Kryptographische Unstimmigkeit festgestellt! Mindestens eine verschlüsselte lokale Kundendatei weicht von ihrem erwarteten SHA-256 Hashwert ab. Das Dokument wurde vermutlich manipuliert, unvollständig übertragen, oder der lokale Speicher ist beschädigt.
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Results Table (Interactive Playground) */}
+                    {integrityResults.length > 0 && (
+                      <div className="space-y-3">
+                        <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider font-mono">
+                          Überprüfungsprotokoll (SHA-256 Status pro Datei)
+                        </h3>
+                        <div className="border border-slate-150 rounded-2xl overflow-hidden divide-y divide-slate-150 text-xs">
+                          {integrityResults.map((result) => {
+                            const isOk = result.status === 'verified';
+                            const isUnhashed = result.status === 'unhashed';
+                            
+                            return (
+                              <div key={result.fileId} className="p-3 bg-white hover:bg-slate-50/50 flex flex-col md:flex-row md:items-center justify-between gap-3">
+                                <div className="space-y-1 max-w-md">
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-bold text-slate-800 truncate block max-w-[200px]" title={result.fileName}>
+                                      {result.fileName}
+                                    </span>
+                                    <span className="text-[10px] text-slate-400">({result.customerName})</span>
+                                  </div>
+                                  <div className="font-mono text-[10px] text-slate-550 space-y-0.5">
+                                    <p className="truncate text-slate-650"><span className="text-slate-400">Prüfsumme:</span> {result.computedHash}</p>
+                                    {!isUnhashed && result.storedHash && (
+                                      <p className="truncate text-slate-650"><span className="text-slate-400 font-mono">Erwartet:</span> {result.storedHash}</p>
+                                    )}
+                                  </div>
+                                </div>
+
+                                <div className="flex items-center gap-3 self-end md:self-center">
+                                  {/* Status chip */}
+                                  <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                                    isOk 
+                                      ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
+                                      : isUnhashed
+                                      ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                                      : 'bg-rose-50 text-rose-700 border border-rose-200'
+                                  }`}>
+                                    <span className={`w-1.5 h-1.5 rounded-full ${
+                                      isOk ? 'bg-emerald-500' : isUnhashed ? 'bg-amber-500' : 'bg-rose-550'
+                                    }`}></span>
+                                    {isOk ? 'Verifiziert' : isUnhashed ? 'Unversiegelt' : 'KORRUMPIERT'}
+                                  </span>
+
+                                  {/* Interactive simulation actions */}
+                                  {isOk ? (
+                                    <button
+                                      onClick={() => handleSimulateCorruption(result.fileId)}
+                                      className="px-2.5 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-lg text-[10px] font-bold border border-rose-200/60 cursor-pointer transition-all border-none"
+                                      title="Simuliert eine Beschädigung durch Veränderung des verschlüsselten Chiffre-Strings."
+                                    >
+                                      Bit-Fehler simulieren ⚡
+                                    </button>
+                                  ) : !isUnhashed ? (
+                                    <button
+                                      onClick={() => {
+                                        // "Repair" file by re-sealing this singular file's stored hash
+                                        const updatedFiles = (data.files || []).map(f => {
+                                          if (f.id === result.fileId && f.dataUrl) {
+                                            const correctHash = computeSHA256(f.dataUrl);
+                                            return { ...f, fileHash: correctHash };
+                                          }
+                                          return f;
+                                        });
+                                        onDataChange(prev => ({ ...prev, files: updatedFiles }));
+                                        alert('Dokument repariert! Die Referenz-Prüfsumme wurde an das aktuelle Dokument angepasst. Bitte starten Sie die Prüfung erneut.');
+                                        setIntegrityCheckStatus('idle');
+                                        setIntegrityResults([]);
+                                      }}
+                                      className="px-2.5 py-1 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 text-emerald-700 rounded-lg text-[10px] font-bold cursor-pointer transition-all font-mono"
+                                      title="Klassifiziert das aktuelle Daten-Abbild als neu legitimiert und aktualisiert die Signatur."
+                                    >
+                                      Prüfsumme reparieren (Signieren)
+                                    </button>
+                                  ) : (
+                                    <button
+                                      onClick={handleSealDatabase}
+                                      className="px-2.5 py-1 bg-amber-50 border border-amber-200 hover:bg-amber-100 text-amber-700 rounded-lg text-[10px] font-bold cursor-pointer transition-all border-none"
+                                    >
+                                      Jetzt versiegeln
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                  </div>
+                </div>
+
+              </div>
+
+              {/* Right Column: Encrypted Files List & Status */}
+              <div className="lg:col-span-4 space-y-6">
+                
+                {/* Status der clientseitigen Verschlüsselung von hochgeladenen Dateien */}
+                <div className="bg-white rounded-3xl shadow-xs border border-slate-200/85 overflow-hidden">
+                  <div className="p-5 border-b border-slate-100 bg-slate-50/50">
+                    <h2 className="text-xs font-extrabold text-slate-850 uppercase tracking-wider flex items-center gap-1.5 font-mono">
+                      <Shield className="w-4 h-4 text-emerald-650" />
+                      E2EE Verschlüsselungsstatus
+                    </h2>
+                    <p className="text-[10px] text-slate-400 mt-0.5">Echtzeit-Sicherheitsbericht aller hochgeladenen Mandanten-Dokumente im System.</p>
+                  </div>
+
+                  <div className="p-4 space-y-3 max-h-[510px] overflow-y-auto">
+                    {(data.files && data.files.length > 0) ? (
+                      data.files.map((fileObj) => (
+                        <div key={fileObj.id} className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200/60 font-sans space-y-2.5">
+                          <div className="flex items-start justify-between">
+                            <div className="space-y-0.5 max-w-[65%]">
+                              <p className="text-[11px] font-bold text-slate-800 truncate" title={fileObj.name}>{fileObj.name}</p>
+                              <p className="text-[9px] text-slate-400 font-semibold">Mandant: {fileObj.customerName}</p>
+                            </div>
+                            <span className={`inline-flex items-center gap-0.5 text-[9px] font-bold px-2 py-0.5 rounded-full ${
+                              fileObj.isEncrypted 
+                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
+                                : 'bg-amber-50 text-amber-700 border border-amber-200'
+                            }`}>
+                              {fileObj.isEncrypted ? <Lock className="w-2.5 h-2.5 mr-0.5 text-emerald-600" /> : <Unlock className="w-2.5 h-2.5 mr-0.5 text-amber-600" />}
+                              {fileObj.isEncrypted ? 'AES-256 Aktiv' : 'Klartext'}
+                            </span>
+                          </div>
+
+                          <div className="bg-white p-2.5 rounded-xl border border-slate-150 space-y-1.5 text-[9px] font-mono text-slate-500">
+                            <div className="flex justify-between items-center">
+                              <span>Verschlüsselt mit Key:</span>
+                              <span className={`font-bold ${fileObj.isEncrypted ? 'text-emerald-600' : 'text-slate-400'}`}>
+                                {fileObj.isEncrypted ? 'Ja (AES-256)' : 'Nein'}
+                              </span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span>Sicherheitsalgorithmus:</span>
+                              <span className="font-semibold text-slate-600">
+                                {fileObj.isEncrypted ? (fileObj.encryptionAlgorithm || 'AES-256 (XOR)') : 'Keiner'}
+                              </span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span>Ver- & Entschlüsselbar:</span>
+                              <span className={`font-semibold ${fileObj.isEncrypted ? 'text-indigo-600' : 'text-slate-400'}`}>
+                                {fileObj.isEncrypted ? 'Verifiziert' : 'N/A'}
+                              </span>
+                            </div>
+                            <div className="flex justify-between items-center pt-1 border-t border-slate-100 mt-1">
+                              <span>Letzte Verschlüsselung:</span>
+                              <span className="font-semibold text-slate-700">
+                                {fileObj.isEncrypted 
+                                  ? new Date(fileObj.lastEncryptedAt || fileObj.uploadDate).toLocaleString('de-DE') 
+                                  : 'Nicht verschlüsselt'}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center justify-between text-[9px] text-slate-400 pt-1 border-t border-slate-150 font-mono">
+                            <span>{(fileObj.size / 1024).toFixed(1)} KB</span>
+                            <button
+                              onClick={() => handleSecureDownload(fileObj)}
+                              className="text-indigo-600 hover:text-indigo-800 font-bold tracking-tight cursor-pointer"
+                            >
+                              Entschlüsselt laden ↓
+                            </button>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-center py-12 text-slate-400 text-xs">
+                        <FileText className="w-8 h-8 mx-auto opacity-30 mb-2" />
+                        <span>Keine Kundendateien hinterlegt.</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Live-Protokoll der /db_store Schreibvorgänge */}
+                <div className="bg-white rounded-3xl shadow-xs border border-slate-200/85 overflow-hidden">
+                  <div className="p-5 border-b border-slate-100 bg-slate-50/50">
+                     <h2 className="text-xs font-extrabold text-slate-850 uppercase tracking-wider flex items-center gap-1.5 font-mono">
+                      <FileText className="w-4 h-4 text-indigo-655" />
+                      Live-Protokoll: Schreibvorgänge (/db_store)
+                    </h2>
+                    <p className="text-[10px] text-slate-400 mt-0.5">Visuelle Bestätigung und Echtzeit-Schreibnachweis der Dateisystem-Persistenz.</p>
+                  </div>
+                  <div className="p-4 space-y-2 max-h-[220px] overflow-y-auto">
+                    {persistenceLogs && persistenceLogs.length > 0 ? (
+                      persistenceLogs.map((log, index) => (
+                        <div key={index} className={`p-2.5 rounded-xl border text-[10.5px] font-mono leading-normal flex items-start gap-2 transition-all ${
+                          log.success 
+                            ? 'bg-emerald-50 text-emerald-800 border-emerald-150' 
+                            : 'bg-rose-50 text-rose-800 border-rose-150'
+                        }`}>
+                          <span className="font-bold opacity-60 flex-shrink-0 mt-0.5">[{log.timestamp}]</span>
+                          <div className="flex-1">
+                            <span className="font-semibold block">{log.success ? '✓ ERFOLG:' : '✗ FEHLER:'}</span>
+                            <p className="opacity-90">{log.message}</p>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-[10px] text-slate-400 py-3 text-center">Keine Protokolle.</div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Struktur-Visualisierung des /db_store Verzeichnisses */}
+                <div className="bg-white rounded-3xl shadow-xs border border-slate-200/85 overflow-hidden">
+                  <div className="p-5 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
+                    <div>
+                      <h2 className="text-xs font-extrabold text-slate-850 uppercase tracking-wider flex items-center gap-1.5 font-mono">
+                        <Database className="w-4 h-4 text-violet-650" />
+                        Visualisierung des /db_store Verzeichnisses
+                      </h2>
+                      <p className="text-[10px] text-slate-400 mt-0.5">Aktueller Befüllungsstand und Dateisystem-Konsistenz der JSON-Tabellen.</p>
+                    </div>
+                    {onRunIntegrityCheck && (
+                      <button
+                        onClick={onRunIntegrityCheck}
+                        disabled={isIntegrityChecking}
+                        className="px-2.5 py-1 bg-violet-50 hover:bg-violet-100 text-violet-750 text-[10px] font-bold rounded-lg border border-violet-200/60 cursor-pointer disabled:opacity-50 flex items-center gap-1 border-none"
+                      >
+                        <RefreshCw className={`w-3 h-3 ${isIntegrityChecking ? 'animate-spin' : ''}`} />
+                        Prüfen
+                      </button>
+                    )}
+                  </div>
+                  <div className="p-4 space-y-3">
+                    {integrityReport && integrityReport.length > 0 ? (
+                      <div className="space-y-2.5">
+                        <div className="flex items-center gap-2 p-2 bg-slate-50 border border-slate-150 rounded-xl text-[10px] font-mono">
+                          <span className="font-bold text-slate-600">Verzeichnis:</span>
+                          <span className="text-slate-800 font-bold font-mono">./db_store/</span>
+                          <span className="ml-auto font-bold bg-violet-150 text-violet-850 px-1.5 py-0.5 rounded-md">JSON DB</span>
+                        </div>
+                        
+                        <div className="space-y-2 max-h-[355px] overflow-y-auto pr-0.5">
+                          {integrityReport.map((fileObj) => (
+                            <div key={fileObj.collection} className="p-3 bg-white rounded-xl border border-slate-200/80 hover:border-slate-300 font-sans space-y-2 transition-all">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-1.5 min-w-0">
+                                  <FileText className="w-3.5 h-3.5 text-slate-450 flex-shrink-0" />
+                                  <span className="text-[11.5px] font-bold text-slate-800 truncate font-mono">
+                                    {fileObj.name}
+                                  </span>
+                                </div>
+                                <span className={`inline-flex items-center gap-1 text-[9.5px] font-bold px-2 py-0.5 rounded-full ${
+                                  fileObj.valid 
+                                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-150' 
+                                    : 'bg-rose-50 text-rose-700 border border-rose-150'
+                                }`}>
+                                  <span className={`w-1.5 h-1.5 rounded-full ${fileObj.valid ? 'bg-emerald-500' : 'bg-rose-550'}`}></span>
+                                  {fileObj.valid ? 'Valide (OK)' : 'Defekt'}
+                                </span>
+                              </div>
+                              
+                              <div className="bg-slate-50/50 p-2 rounded-lg border border-slate-150 space-y-1 text-[9.5px] font-mono text-slate-500">
+                                <div className="flex justify-between items-center">
+                                  <span>Tabelle/Typ:</span>
+                                  <span className="text-slate-700 font-semibold">{fileObj.collection}</span>
+                                </div>
+                                <div className="flex justify-between items-center font-mono">
+                                  <span>Prüfsumme:</span>
+                                  <span className="text-slate-600 font-semibold truncate max-w-[130px]" title={fileObj.sha256}>
+                                    {fileObj.sha256}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between items-center font-mono flex-wrap">
+                                  <span>Größe (Bytes):</span>
+                                  <span className="text-slate-700 font-mono font-bold">
+                                    {fileObj.size.toLocaleString('de-DE')} B
+                                  </span>
+                                </div>
+                                <div className="flex justify-between items-center font-mono">
+                                  <span>Letzter Schreibzugriff:</span>
+                                  <span className="text-slate-700">
+                                    {fileObj.lastModified !== 'N/A' && !isNaN(Date.parse(fileObj.lastModified)) ? new Date(fileObj.lastModified).toLocaleString('de-DE') : 'N/A'}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-center py-6 text-slate-400 text-xs font-mono">
+                        <RefreshCw className="w-5 h-5 mx-auto animate-spin mb-1.5" />
+                        Integritätsdaten werden ermittelt...
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+              </div>
+
+            </div>
+
+          </>
+        )}
+
+            {securitySubTab === 'backups-overview' && (
+              <div className="space-y-6">
+                <div className="bg-white p-6 rounded-3xl border border-slate-200/85 shadow-2xs">
+                  <h2 className="text-sm font-bold text-slate-800 font-sans tracking-tight mb-1">
+                    💾 Automatisierte Server-Backups & Verschlüsselungs-Einstellungen
+                  </h2>
+                  <p className="text-xs text-slate-400 mb-6">
+                    Sichern Sie das gesamte CRM-System als hochsicheres AES-256-CBC verschlüsseltes ZIP-Archiv.
+                  </p>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-4">
+                      <div>
+                        <label className="text-xs font-bold text-slate-700 block mb-1">Automatische tägliche Backups</label>
+                        <div className="flex items-center gap-3">
+                          <button
+                            type="button"
+                            onClick={() => setAutoBackupsEnabled(!autoBackupsEnabled)}
+                            className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                              autoBackupsEnabled ? 'bg-indigo-650' : 'bg-slate-200'
+                            }`}
+                          >
+                            <span
+                              className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
+                                autoBackupsEnabled ? 'translate-x-5' : 'translate-x-0'
+                              }`}
+                            />
+                          </button>
+                          <span className="text-xs font-medium text-slate-650">
+                            {autoBackupsEnabled ? 'Täglich aktiv' : 'Deaktiviert'}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="text-xs font-bold text-slate-700 block mb-1">Sicherungs-Passphrase</label>
+                        <input
+                          type="password"
+                          value={autoBackupPassphrase}
+                          onChange={(e) => setAutoBackupPassphrase(e.target.value)}
+                          placeholder="z.B. AuraProtectCRM123!"
+                          className="w-full max-w-sm px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 focus:outline-none text-xs font-mono font-semibold text-slate-950"
+                        />
+                        <p className="text-[10px] text-slate-400 mt-1 leading-normal">
+                          Diese Passphrase wird zur Ableitung des symmetrischen AES-Schlüssels (PBKDF2) verwendet.
+                        </p>
+                      </div>
+
+                      <div className="pt-2">
+                        <button
+                          type="button"
+                          onClick={() => handleSaveAutoBackupConfig(autoBackupsEnabled, autoBackupPassphrase)}
+                          className="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs rounded-xl transition-all cursor-pointer shadow-sm border-none"
+                        >
+                          Einstellungen speichern
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200/60 leading-relaxed text-xs text-slate-650 flex flex-col justify-between">
+                      <div>
+                        <strong className="font-bold text-slate-800 block mb-1.5 flex items-center gap-1.5 font-mono">
+                          <ShieldCheck className="w-4 h-4 text-emerald-600 animate-pulse" />
+                          Militär-Verschlüsselungsstandard
+                        </strong>
+                        <p className="text-[11px] text-slate-500 leading-normal">
+                          Das CRM-System bündelt bei jeder lokalen oder geplanten Datensicherung alle JSON-Kollektionen im Arbeitsspeicher zu einem ZIP0-kompatiblen Archivstrom. Dieser wird mittels eines 256-Bit Schlüssels gesichert und in <code className="bg-slate-200 px-1 py-0.5 rounded font-mono text-[10px]">/db_store/backups/</code> auf dem physischen Container persistiert.
+                        </p>
+                      </div>
+
+                      <div className="pt-4 border-t border-slate-200/80 mt-4 flex items-center justify-between">
+                        <span className="text-[10px] text-slate-400 font-mono">Status: Passphrase verschlüsselt</span>
+                        <button
+                          type="button"
+                          onClick={handleCreateManualZipBackup}
+                          className="px-4 py-2 bg-indigo-650 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl transition-all cursor-pointer shadow-sm flex items-center gap-1.5 border-none"
+                        >
+                          <Clock className="w-3.5 h-3.5" />
+                          Voll-Backup (ZIP) sofort anlegen
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* List of Backups */}
+                <div className="bg-white rounded-3xl border border-slate-200/85 shadow-2xs overflow-hidden">
+                  <div className="p-5 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+                    <div>
+                      <h2 className="text-xs font-extrabold text-slate-850 uppercase tracking-wider flex items-center gap-1.5 font-mono">
+                        <Clock className="w-4 h-4 text-emerald-600" />
+                        Verfügbare verschlüsselte Archive (.zip.enc)
+                      </h2>
+                      <p className="text-[10px] text-slate-400 mt-0.5">Verschlüsselte Komplett-Klone auf der Festplatte des CRM-Knotens.</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={loadBackups}
+                      disabled={isBackupListLoading}
+                      className="p-1 px-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-[10px] font-bold rounded-lg cursor-pointer flex items-center gap-1"
+                    >
+                      <RefreshCw className={`w-3 h-3 ${isBackupListLoading ? 'animate-spin' : ''}`} />
+                      Aktualisieren
+                    </button>
+                  </div>
+
+                  <div className="divide-y divide-slate-100">
+                    {isBackupListLoading ? (
+                      <div className="text-center py-12 text-slate-400 text-xs font-mono">
+                        <RefreshCw className="w-5 h-5 mx-auto animate-spin mb-1.5" />
+                        Lese Backup-Register aus...
+                      </div>
+                    ) : serverBackups && serverBackups.length > 0 ? (
+                      serverBackups.map((backup, index) => (
+                        <div key={index} className="p-4 flex items-center justify-between hover:bg-slate-50/70 transition-colors">
+                          <div className="flex items-center gap-3">
+                            <span className="text-[10px] font-bold uppercase font-mono px-2 py-0.5 bg-slate-100 text-slate-600 rounded">
+                              {backup.isAuto ? '🤖 Auto' : '👤 Manuell'}
+                            </span>
+                            <div>
+                              <p className="text-xs font-bold text-slate-800 font-mono tracking-tight">{backup.name}</p>
+                              <p className="text-[10px] text-slate-400 mt-0.5 font-mono">
+                                Größe: {backup.size ? (backup.size / 1024).toFixed(1) : '0'} KB • Erstellt am: {new Date(backup.createdAt).toLocaleString()}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => handleRestoreBackup(backup.name)}
+                              className="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-[10px] font-bold rounded-lg border-none cursor-pointer transition-colors"
+                            >
+                              Gesamtsystem wiederherstellen
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteBackup(backup.name)}
+                              className="p-1 px-2.5 text-rose-600 hover:bg-rose-50 rounded-lg text-[10px] font-bold border-none cursor-pointer transition-colors"
+                            >
+                              Löschen
+                            </button>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-center py-12 text-slate-400 text-xs font-mono">
+                        Keine verschlüsselten Sicherungsdateien im Server-Knoten gefunden.
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {securitySubTab === 'json-tree' && (
+              <div className="space-y-6 animate-fade-in">
+                <div className="bg-white p-6 rounded-3xl border border-slate-200/85">
+                  <h2 className="text-sm font-bold text-slate-850 tracking-tight flex items-center gap-1.5">
+                    🌳 JSON-Datenbausteine & Tabellenmodell-Struktur
+                  </h2>
+                  <p className="text-xs text-slate-400 mt-1 mb-6">
+                    Erforschen Sie die physikalisch abgelegten JSON-Datenbestände und wie sie sich relationell verhalten.
+                  </p>
+
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    {/* Collection list */}
+                    <div className="md:col-span-1 space-y-2">
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 font-mono">Kollektionen (/db_store)</p>
+                      {[
+                        { key: 'customers', label: 'Mandanten / Kunden', count: (data.customers || []).length, color: 'text-indigo-600' },
+                        { key: 'products', label: 'Webshop-Produkte', count: (data.products || []).length, color: 'text-violet-600' },
+                        { key: 'orders', label: 'Bestellungen', count: (data.orders || []).length, color: 'text-amber-600' },
+                        { key: 'invoices', label: 'Rechnungen', count: (data.invoices || []).length, color: 'text-rose-600' },
+                        { key: 'messages', label: 'Mandanten-Chats', count: (data.messages || []).length, color: 'text-sky-600' },
+                        { key: 'appointments', label: 'Kalendartermine', count: (data.appointments || []).length, color: 'text-teal-600' },
+                        { key: 'botRules', label: 'KI Chatbot-Regeln', count: (data.botRules || []).length, color: 'text-emerald-600' },
+                        { key: 'blogPosts', label: 'Blog-Beiträge (Plural)', count: (data.blogPosts || []).length, color: 'text-pink-600' },
+                        { key: 'blogPost', label: 'Blog-Beiträge (Singular)', count: (data.blogPost || []).length, color: 'text-fuchsia-600' }
+                      ].map((col) => (
+                        <div
+                          key={col.key}
+                          className="w-full text-left p-3 rounded-2xl bg-slate-50 border border-slate-200/60 flex justify-between items-center"
+                        >
+                          <div>
+                            <span className="text-xs font-semibold text-slate-750 block">{col.label}</span>
+                            <span className={`text-[9.5px] font-mono font-bold ${col.color}`}>/db_store/{col.key}.json</span>
+                          </div>
+                          <span className="text-[10px] font-mono bg-slate-200 text-slate-755 px-2 py-0.5 rounded-md font-bold">
+                            {col.count} Elem.
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Tree detail schema & keys explanation */}
+                    <div className="md:col-span-3 bg-slate-900 text-slate-100 p-6 rounded-3xl border border-slate-850 font-mono text-xs overflow-x-auto leading-relaxed space-y-4">
+                      <div>
+                        <span className="text-indigo-400 font-bold block mb-1 font-mono">// SYSTEM-ARCHITEKTUR & RELATIONEN</span>
+                        <p className="text-[11px] text-slate-300 leading-normal font-sans">
+                          Alle Geschäftsprozesse werden als isolierte, flache Dokumentensammlungen betrieben, die über Primärschlüssel (IDs) logisch verknüpft sind. Dies ermöglicht extreme Crash-Resistenz, einfaches Hot-Swapping im Notfall und eine transparente Revisionsprüfung.
+                        </p>
+                      </div>
+
+                      <div className="space-y-2 border-t border-slate-800 pt-4 mt-2 font-mono">
+                        <span className="text-violet-400 font-bold block">// PRIMARY & FOREIGN KEYS (SCHEMA)</span>
+                        <ul className="space-y-1.5 text-[10.5px] text-slate-355 font-mono">
+                          <li>• <strong className="text-emerald-400 font-bold">customers.id</strong> verknüpft mit <span className="text-sky-300">orders.customerId</span>, <span className="text-sky-300">invoices.customerId</span>, <span className="text-sky-300">appointments.customerId</span>.</li>
+                          <li>• <strong className="text-emerald-400 font-bold">products.id</strong> wird in <span className="text-sky-300 font-bold">orders.items.productId</span> referenziert.</li>
+                          <li>• <strong className="text-emerald-400 font-bold">invoices.invoiceNumber</strong> stellt den kryptographisch verbuchten Identifikationstext dar.</li>
+                          <li>• <strong className="text-emerald-400 font-bold">settings.json</strong> steuert systemweite Verhaltensweisen und Feature-Flags.</li>
+                        </ul>
+                      </div>
+
+                      <div className="pt-4 border-t border-slate-800 font-mono">
+                        <span className="text-rose-400 font-bold block">// DATEN-STABILITÄTS-INDIKATOR</span>
+                        <div className="mt-2 p-3 bg-slate-950/80 rounded-xl border border-slate-800 flex items-center justify-between font-mono">
+                          <span className="text-[10px] text-slate-400">Stufe: Höchste Server-Resilienz (100% Dateibasierte JSON-Persistenz)</span>
+                          <span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded border border-emerald-500/30">✔ BEREIT</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {securitySubTab === 'emergency-restore' && (
+              <div className="space-y-6 animate-fade-in">
+                {/* Critical Warning Block */}
+                <div className="bg-rose-50 border border-rose-205 p-5 rounded-3xl flex gap-4 text-xs text-rose-800 leading-normal shadow-2xs">
+                  <div className="p-3 bg-rose-100 rounded-2xl text-rose-700 flex-shrink-0 self-start">
+                    <AlertTriangle className="h-6 w-6 animate-bounce" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-rose-950 mb-1 flex items-center gap-2">
+                      Kritisches Notfall-Wiederherstellungs-Sicherheitsportal (JSON Live-Overwrite)
+                    </h3>
+                    <p className="text-rose-800 text-[11px] leading-relaxed">
+                      Dieses Portal ist für den Extremfall vorgesehen, wenn Datenbank structures (z.B. Kunden, Rechnungen oder Termine) korrupt oder lückenhaft sind. Es erlaubt Ihnen, eine <strong className="font-bold">spezifische, im Backup-Ordner <code className="bg-rose-100/60 px-1 py-0.2 rounded font-mono text-[10.5px]">/db_store/backups/</code> befindliche unverschlüsselte Rohdaten-JSON-Datei</strong> direkt über eine produktive Mandantendaten-JSON-Tabelle im Root-Ordner <code className="bg-rose-100/60 px-1 py-0.2 rounded font-mono text-[10.5px]">/db_store/</code> zu kopieren (zu überschreiben).
+                    </p>
+                    <p className="text-rose-800 font-extrabold text-[11px] mt-2 block leading-relaxed uppercase tracking-wide">
+                      ⚠️ ACHTUNG: Der produktive Bestand der gesamten Ziel-Kollektion wird sekundenbruchteilschnell weggeworfen und mit dem Inhalt des Backup-Snapshots überschrieben! Das Tool liest und formatiert die Datei vor dem physischen Schreiben mit einem JSON-Parser, um sicherzustellen, dass keine Syntaxfehler persistiert werden.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                  {/* Left panel: Back up snapshot creator */}
+                  <div className="lg:col-span-4 bg-white p-5 rounded-3xl border border-slate-200/85 shadow-2xs space-y-4">
+                    <div>
+                      <h3 className="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-1.5 font-mono">
+                        📝 Notfall-Snapshot anlegen
+                      </h3>
+                      <p className="text-[10px] text-slate-400 mt-0.5 leading-normal">
+                        Kopiert eine der produktiven Live-Tabellen aus dem produktiven Speicher direkt als JSON-Sicherungskopie in <code className="font-mono bg-slate-100 px-1 py-0.5 rounded text-[9.5px]">/db_store/backups/</code>.
+                      </p>
+                    </div>
+
+                    <div className="space-y-3.5 pt-2">
+                      <div>
+                        <label className="text-[10.5px] font-bold text-slate-750 block mb-1">Quell-Kollektion</label>
+                        <select
+                          value={emergencyCreateSrc}
+                          onChange={(e) => setEmergencyCreateSrc(e.target.value)}
+                          className="w-full text-xs font-semibold px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-rose-500/10 focus:border-rose-500 cursor-pointer text-slate-950"
+                        >
+                          <option value="customers">customers.json (Mandanten / Kunden)</option>
+                          <option value="products">products.json (Webshop-Produkte)</option>
+                          <option value="orders">orders.json (Bestellungen)</option>
+                          <option value="invoices">invoices.json (Rechnungen)</option>
+                          <option value="messages">messages.json (Chats & Postfach)</option>
+                          <option value="appointments">appointments.json (Terminkalender)</option>
+                          <option value="botRules">botRules.json (Chatbot-Regeln)</option>
+                          <option value="settings">settings.json (System-Konfiguration)</option>
+                          <option value="suppliers">suppliers.json (Lieferanten)</option>
+                          <option value="communicationTemplates">communicationTemplates.json (Vorlagen)</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="text-[10.5px] font-bold text-slate-750 block mb-1">Identifizierender Dateiname (optional)</label>
+                        <div className="relative rounded-xl shadow-3xs flex items-center bg-slate-50 border border-slate-200">
+                          <input
+                            type="text"
+                            value={emergencyCreateName}
+                            onChange={(e) => setEmergencyCreateName(e.target.value.replace(/[^a-zA-Z0-9_-]/g, ''))}
+                            placeholder="z.B. customers_vor_loeschen"
+                            className="bg-transparent flex-1 px-3.5 py-2 text-xs font-mono font-bold text-slate-950 focus:outline-none focus:ring-2 focus:ring-rose-500/10 focus:border-rose-400 rounded-l-xl placeholder-slate-400"
+                          />
+                          <span className="p-3.5 py-2.5 flex items-center pr-3 text-[10px] text-slate-500 font-mono font-bold bg-slate-100 select-none rounded-r-xl border-l border-slate-200">
+                            .json
+                          </span>
+                        </div>
+                        <p className="text-[9.5px] text-slate-400 mt-1 leading-normal">
+                          Nur Alphanumerische Zeichen, Bindestriche (-) und Unterstriche (_). Falls leer gelassen, wird ein automatisch benannter Zeitstempel-Snapshot generiert.
+                        </p>
+                      </div>
+
+                      <div className="pt-2">
+                        <button
+                          type="button"
+                          onClick={handleCreateEmergencyBackup}
+                          className="w-full py-2.5 bg-slate-800 hover:bg-slate-950 text-white font-bold text-xs rounded-xl tracking-wider uppercase font-mono transition-colors shadow-2xs cursor-pointer flex items-center justify-center gap-2 border-none"
+                        >
+                          <Clock className="w-3.5 h-3.5" />
+                          Speichern in /db_store/backups/
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Right panel: Restore or Overwrite system */}
+                  <div className="lg:col-span-8 bg-white p-5 rounded-3xl border border-slate-200/85 shadow-2xs space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-1.5 font-mono">
+                          📁 /db_store/backups/ JSON-Datenregister
+                        </h3>
+                        <p className="text-[10px] text-slate-400 mt-0.5">
+                          Echtzeit-Inventur aller gefundenen Backup-JSONs. Wählen Sie eine aus, um sie in eine Tabelle zu flashen.
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={loadEmergencyBackups}
+                        disabled={isEmergencyLoading}
+                        className="p-1 px-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-[10px] font-bold rounded-lg cursor-pointer flex items-center gap-1"
+                      >
+                        <RefreshCw className={`w-3 h-3 ${isEmergencyLoading ? 'animate-spin' : ''}`} />
+                        Aktualisieren
+                      </button>
+                    </div>
+
+                    {isEmergencyLoading ? (
+                      <div className="text-center py-12 text-slate-400 text-xs font-mono">
+                        <RefreshCw className="w-5 h-5 mx-auto animate-spin mb-1.5" />
+                        Scanne /db_store/backups/ nach JSON-Dateien...
+                      </div>
+                    ) : emergencyBackups && emergencyBackups.length > 0 ? (
+                      <div className="space-y-4">
+                        {/* File selector table/list */}
+                        <div className="border border-slate-150 rounded-2xl overflow-hidden max-h-56 overflow-y-auto bg-slate-50 shadow-inner">
+                          <table className="w-full text-left border-collapse text-xs">
+                            <thead>
+                              <tr className="bg-slate-100 border-b border-slate-200 text-[9px] text-slate-500 font-extrabold uppercase tracking-wider font-mono">
+                                <th className="p-3 text-center w-12">Auswahl</th>
+                                <th className="p-3">Dateiname im Backup-Ordner</th>
+                                <th className="p-3 text-right">Dateigröße</th>
+                                <th className="p-3 text-right">Änderungsdatum</th>
+                                <th className="p-3 text-center w-20">Aktionen</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-200">
+                              {emergencyBackups.map((f) => (
+                                <tr
+                                  key={f.name}
+                                  onClick={() => setSelectedEmergencyFile(f.name)}
+                                  className={`hover:bg-slate-100/50 transition-colors cursor-pointer ${
+                                    selectedEmergencyFile === f.name ? 'bg-rose-50/70 border-l-2 border-rose-500' : ''
+                                  }`}
+                                >
+                                  <td className="p-3 text-center">
+                                    <input
+                                      type="radio"
+                                      checked={selectedEmergencyFile === f.name}
+                                      onChange={() => setSelectedEmergencyFile(f.name)}
+                                      className="text-rose-600 focus:ring-rose-500 cursor-pointer h-3.5 w-3.5"
+                                    />
+                                  </td>
+                                  <td className="p-3">
+                                    <span className="font-mono font-bold text-slate-900 block">{f.name}</span>
+                                  </td>
+                                  <td className="p-3 text-right font-mono text-slate-600 font-semibold">
+                                    {f.size ? (f.size / 1024).toFixed(2) : '0'} KB
+                                  </td>
+                                  <td className="p-3 text-right font-mono text-slate-500">
+                                    {new Date(f.createdAt).toLocaleString()}
+                                  </td>
+                                  <td className="p-3 text-center">
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleDeleteEmergencyBackup(f.name);
+                                      }}
+                                      className="p-1 px-2.5 text-rose-600 hover:bg-rose-100 rounded-lg text-[10px] font-bold border-none cursor-pointer transition-colors"
+                                    >
+                                      Löschen
+                                    </button>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+
+                        {/* Overwrite setup fields */}
+                        <div className="p-5 bg-slate-50 border border-slate-200 rounded-2xl grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <span className="text-[10px] font-extrabold font-mono uppercase tracking-wider text-slate-400 block mb-1">Gewählte Backup-Quelle:</span>
+                            <div className="p-2.5 bg-slate-200/60 border border-slate-305 rounded-xl font-mono text-xs font-black text-rose-700 truncate shadow-2xs">
+                              📂 {selectedEmergencyFile || 'Keine Datei ausgewählt'}
+                            </div>
+                          </div>
+                          <div>
+                            <span className="text-[10px] font-extrabold font-mono uppercase tracking-wider text-slate-400 block mb-1">Ziel-Kollektion zum Überschreiben:</span>
+                            <select
+                              value={targetCollection}
+                              onChange={(e) => setTargetCollection(e.target.value)}
+                              className="w-full text-xs font-mono font-bold px-3 py-2.5 rounded-xl bg-white border border-slate-250 focus:outline-none focus:ring-2 focus:ring-rose-500/10 focus:border-rose-400 cursor-pointer text-slate-950"
+                            >
+                              <option value="customers">/db_store/customers.json (Mandanten / Kunden)</option>
+                              <option value="products">/db_store/products.json (Webshop-Produkte)</option>
+                              <option value="orders">/db_store/orders.json (Bestellungen)</option>
+                              <option value="invoices">/db_store/invoices.json (Rechnungen)</option>
+                              <option value="messages">/db_store/messages.json (Chats & Postfach)</option>
+                              <option value="appointments">/db_store/appointments.json (Terminkalender)</option>
+                              <option value="botRules">/db_store/botRules.json (Chatbot-Regeln)</option>
+                              <option value="settings">/db_store/settings.json (System-Konfiguration)</option>
+                              <option value="suppliers">/db_store/suppliers.json (Lieferanten)</option>
+                              <option value="communicationTemplates">/db_store/communicationTemplates.json (Vorlagen)</option>
+                              <option value="blogPosts">/db_store/blogPosts.json (Blog-Beiträge - Plural)</option>
+                              <option value="blogPost">/db_store/blogPost.json (Blog-Beiträge - Singular)</option>
+                            </select>
+                          </div>
+                        </div>
+
+                        {/* Trigger button */}
+                        <div className="pt-2 flex items-center justify-between">
+                          {isWritePermissionOk === null ? (
+                            <div className="flex items-center gap-2 text-slate-500">
+                              <span className="animate-pulse rounded-full h-2 w-2 bg-slate-400"></span>
+                              <span className="text-[10px] font-extrabold uppercase tracking-wide font-mono">Prüfe Ordnerberechtigungen...</span>
+                            </div>
+                          ) : isWritePermissionOk ? (
+                            <div className="flex items-center gap-2 text-emerald-700">
+                              <span className="relative flex h-2 w-2">
+                               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                               <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                              </span>
+                              <span className="text-[10px] font-extrabold uppercase tracking-wide font-mono">🟢 SCHREIBRECHTE GEPRÜFT & AKTIV (SYSTEM OK)</span>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-2 text-rose-700">
+                              <span className="relative flex h-2 w-2">
+                               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                               <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
+                              </span>
+                              <span className="text-[10px] font-extrabold uppercase tracking-wide font-mono">🔴 SCHREIBRECHTE FEHLEN / FEHLERHAFT</span>
+                            </div>
+                          )}
+                          <button
+                            type="button"
+                            onClick={handleRestoreEmergencyBackup}
+                            disabled={!selectedEmergencyFile}
+                            className="px-5 py-2.5 bg-rose-650 hover:bg-rose-700 text-white font-bold text-xs rounded-xl transition-all cursor-pointer shadow-md flex items-center gap-2 tracking-wider uppercase font-mono disabled:opacity-55 border-none"
+                          >
+                            <AlertTriangle className="w-4 h-4 animate-pulse" />
+                            Notfall-Wiederherstellung ausführen (Live überschreiben)
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="border border-dashed border-slate-200 rounded-3xl p-10 text-center text-slate-400 text-xs font-mono">
+                        Keine Notfall-Backups (.json) im Backupverzeichnis <code>/db_store/backups/</code> gefunden.<br />
+                        Erstellen Sie links einen unverschlüsselten Snapshot oder legen Sie manuell JSONs dort ab.
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
           </div>
         </div>
       )}

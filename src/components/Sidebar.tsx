@@ -123,6 +123,7 @@ export default function Sidebar({
     { id: 'settings', label: 'Einstellungen', icon: Sliders },
     { id: 'templates', label: 'Roadmap-Templates', icon: Layers },
     { id: 'communication-templates', label: 'Antwort-Vorlagen', icon: FileText },
+    { id: 'security-dashboard', label: 'Sicherheit', icon: ShieldCheck },
     ...(botEnabled ? [
       { id: 'bottraining', label: 'KI-Chatbot', icon: Cpu }
     ] : []),

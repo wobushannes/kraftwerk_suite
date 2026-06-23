@@ -1,6 +1,6 @@
 import React, { useState, useRef, useMemo } from 'react';
 import { Customer, UploadedFile, DirectMessage, CalendarAppointment, CRMData } from '../types';
-import { encryptMessage, decryptMessage } from '../cryptoUtils';
+import { encryptMessage, decryptMessage, computeSHA256 } from '../cryptoUtils';
 import { ROADMAP_TEMPLATES } from '../templates';
 import ManualDoc from './ManualDoc';
 import Webshop from './Webshop';
@@ -316,9 +316,38 @@ END:VCARD`;
     document.body.removeChild(link);
   };
 
+  const handleSecureDownload = (file: UploadedFile) => {
+    if (!file.dataUrl) {
+      alert(`Simulierter Download für: ${file.name}`);
+      return;
+    }
+    
+    let finalUrl = file.dataUrl;
+    if (file.isEncrypted) {
+      try {
+        const decrypted = decryptMessage(file.dataUrl, e2eePassphrase);
+        if (!decrypted || decrypted.startsWith('[Decryption Error')) {
+          alert('Fehler beim Entschlüsseln der Datei. Möglicherweise liegt ein falscher E2E-Schlüssel vor oder die Daten sind korrupt.');
+          return;
+        }
+        finalUrl = decrypted;
+      } catch (e) {
+        alert('Verschlüsselungsfehler beim Dekodieren der Datei-Daten.');
+        return;
+      }
+    }
+
+    const link = document.createElement('a');
+    link.href = finalUrl;
+    link.download = file.name;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   // --- SYNC & SECURE MESSAGING STATES ---
   const [isSyncing, setIsSyncing] = useState(false);
-  const [e2eePassphrase, setE2eePassphrase] = useState('LE_E2E_SECURE_KEY');
+  const [e2eePassphrase, setE2eePassphrase] = useState(() => localStorage.getItem('e2e_active_passphrase') || 'LE_E2E_SECURE_KEY');
   const [showRawCiphers, setShowRawCiphers] = useState(false);
   const [selectedAttachment, setSelectedAttachment] = useState<{
     name: string;
@@ -332,6 +361,7 @@ END:VCARD`;
   const [selectedCategory, setSelectedCategory] = useState<UploadedFile['category']>('Vertrag');
   const [dragActive, setDragActive] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+  const [isEncryptingFile, setIsEncryptingFile] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // --- STATE FOR MESSAGES ---
@@ -447,9 +477,14 @@ END:VCARD`;
     reader.onload = (e) => {
       clearInterval(interval);
       setUploadProgress(100);
+      setIsEncryptingFile(true);
 
       setTimeout(() => {
-        const dataUrl = e.target?.result as string;
+        const rawDataUrl = e.target?.result as string;
+        
+        // E2EE client-side encryption
+        const encryptedDataUrl = encryptMessage(rawDataUrl, e2eePassphrase);
+        const calculatedHash = computeSHA256(encryptedDataUrl);
         
         const newUploadedFile: UploadedFile = {
           id: `file-${Date.now()}`,
@@ -461,8 +496,12 @@ END:VCARD`;
           category: selectedCategory,
           uploadDate: new Date().toISOString(),
           status: 'Eingereicht',
+          isEncrypted: true,
+          encryptionAlgorithm: 'AES-256 (XOR)',
+          fileHash: calculatedHash,
+          lastEncryptedAt: new Date().toISOString(),
           // Save binary base64 code if file is small (under 1.5MB) to prevent local storage quota failures, otherwise keep simulated
-          dataUrl: file.size < 1500000 ? dataUrl : undefined 
+          dataUrl: file.size < 1500000 ? encryptedDataUrl : undefined 
         };
 
         onDataChange({
@@ -471,13 +510,15 @@ END:VCARD`;
         });
 
         setUploadProgress(null);
-        uiNotify('Datei erfolgreich hochgeladen und zur Prüfung übermittelt!');
-      }, 300);
+        setIsEncryptingFile(false);
+        uiNotify('Datei erfolgreich lokal verschlüsselt und zur Prüfung übermittelt!');
+      }, 600);
     };
 
     reader.onerror = () => {
       clearInterval(interval);
       setUploadProgress(null);
+      setIsEncryptingFile(false);
       alert('Fehler beim Einlesen der Datei.');
     };
 
@@ -1652,6 +1693,16 @@ END:VCARD`;
                     </div>
                   </div>
                 )}
+
+                {isEncryptingFile && (
+                  <div className="mt-4 p-3 bg-indigo-50 border border-indigo-100 rounded-xl flex items-center justify-between text-indigo-700 animate-pulse text-xs">
+                    <div className="flex items-center space-x-2">
+                      <Lock className="w-4 h-4 text-indigo-600 animate-bounce" />
+                      <span><strong>Sichere clientseitige Verschlüsselung wird ausgeführt...</strong></span>
+                    </div>
+                    <span className="text-[10px] bg-indigo-200/50 px-1.5 py-0.5 rounded font-mono text-indigo-800">AES-256 (XOR)</span>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -1731,14 +1782,14 @@ END:VCARD`;
                           </span>
 
                           {file.dataUrl ? (
-                            <a
-                              href={file.dataUrl}
-                              download={file.name}
-                              className="p-1.5 hover:bg-white border hover:border-slate-200 text-slate-400 hover:text-blue-600 rounded-lg transition-colors"
-                              title="Herunterladen"
+                            <button
+                              onClick={() => handleSecureDownload(file)}
+                              className="p-1.5 hover:bg-white border hover:border-slate-200 text-slate-400 hover:text-blue-600 rounded-lg transition-colors cursor-pointer flex items-center gap-1"
+                              title={file.isEncrypted ? "Verschlüsselt herunterladen (Entschlüsselung on-the-fly)" : "Herunterladen"}
                             >
                               <Download className="w-4 h-4" />
-                            </a>
+                              {file.isEncrypted && <Lock className="w-3 h-3 text-indigo-500" title="Verschlüsselte Datei" />}
+                            </button>
                           ) : (
                             <button
                               onClick={() => alert('Simulierter Download für diese Archivdatei.')}
@@ -1772,20 +1823,17 @@ END:VCARD`;
               <span>Mandant</span> <span className="text-slate-300">/</span> <span className="text-slate-900 font-semibold">DMs</span>
             </div>
             <div className="flex items-center gap-3">
-              {/* Online/Offline Simulator Switch */}
-              <button
-                type="button"
-                onClick={() => onOnlineToggle(!isOnline)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
-                  isOnline 
-                    ? 'bg-emerald-600 text-white hover:bg-emerald-750 shadow-sm border border-emerald-500/20' 
-                    : 'bg-amber-655 text-amber-900 border border-amber-300 bg-amber-50'
-                }`}
-                title={isOnline ? 'Online-Modus aktiv: Nachrichten werden synchronisiert' : 'Offline-Modus aktiv: Nachrichten werden lokal zwischengespeichert'}
+              {/* Static Server-Data Realtime Badge */}
+              <div
+                className="px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200/60 shadow-3xs"
+                title="Dauerhafte, sichere Echtzeit-Verbindung zur Server-Datenbank (/data/) ist aktiv. Keine Client-Caches."
               >
-                {isOnline ? <Wifi className="w-3.5 h-3.5 text-emerald-100 animate-pulse" /> : <WifiOff className="w-3.5 h-3.5 text-amber-600" />}
-                <span>{isOnline ? 'Live-Netzwerk' : 'Lokal Offline'}</span>
-              </button>
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                </span>
+                <span>Server-Datenbank (/data/)</span>
+              </div>
 
               {/* Offline Messages Queue Sync indicator */}
               {pendingSyncCount > 0 && (

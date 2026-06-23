@@ -359,7 +359,55 @@ export const INITIAL_MOCK_DATA: CRMData = {
       status: "In Stock"
     }
   ],
-  orders: [],
+  orders: [
+    {
+      id: "ord-1",
+      orderNumber: "AU-2026-001",
+      customerId: "cust-max",
+      customerName: "Max Mustermann",
+      items: [
+        {
+          productId: "prod-cms-booking",
+          productName: "Aura Booking Pro Add-on",
+          quantity: 1,
+          priceAtPurchase: 289.00,
+          total: 289.00
+        }
+      ],
+      totalAmount: 289.00,
+      status: "Geliefert",
+      paymentMethod: "PayPal",
+      paymentStatus: "Bezahlt",
+      createdAt: "2026-05-16T14:00:00.000Z",
+      carrier: "DHL",
+      trackingNumber: "CY123456789DE",
+      shippingLabelPrinted: true,
+      shippingAddress: "Musterstraße 1, 80331 München",
+      dsgvoConsent: true
+    },
+    {
+      id: "ord-2",
+      orderNumber: "AU-2026-002",
+      customerId: "cust-tom",
+      customerName: "Tom Weber",
+      items: [
+        {
+          productId: "prod-cms-shop",
+          productName: "Aura Webshop Core Add-on",
+          quantity: 1,
+          priceAtPurchase: 499.00,
+          total: 499.00
+        }
+      ],
+      totalAmount: 499.00,
+      status: "In Bearbeitung",
+      paymentMethod: "Überweisung",
+      paymentStatus: "Ausstehend",
+      createdAt: "2026-06-20T09:30:00.000Z",
+      shippingAddress: "Bahnhofsplatz 5, 80335 München",
+      dsgvoConsent: true
+    }
+  ],
   blogPosts: [
     {
       id: "post-security",
@@ -485,3 +533,6 @@ export const INITIAL_MOCK_DATA: CRMData = {
     }
   ]
 };
+
+INITIAL_MOCK_DATA.blogPost = INITIAL_MOCK_DATA.blogPosts;
+

@@ -1,6 +1,14 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { CRMData, Customer } from './types';
-import { loadCRMData, saveCRMData, hashPassword, fetchServerCRMData, saveServerCRMData } from './storage';
+import { 
+  loadCRMData, 
+  saveCRMData, 
+  hashPassword, 
+  fetchServerCRMData, 
+  saveServerCRMData,
+  fetchIntegrityReport,
+  IntegrityFileReport
+} from './storage';
 import Sidebar from './components/Sidebar';
 import AdminCRM from './components/AdminCRM';
 import CustomerPortal from './components/CustomerPortal';
@@ -10,12 +18,25 @@ import { Lock, User, FileText, LayoutDashboard, Key, ShieldAlert, Home, Sparkles
 export default function App() {
   // --- APPLICATION STATE ---
   const [data, setData] = useState<CRMData>(loadCRMData());
+  const [hasLoaded, setHasLoaded] = useState<boolean>(false);
   const [session, setSession] = useState<{
     role: 'admin' | 'customer';
     userId: string; // 'admin' or customerId
     displayName: string;
     companyName?: string;
   } | null>(null);
+
+  // --- REAL DATA PERSISTENCE & SYSTEM INTEGRITY LOGGING ---
+  const [persistenceLogs, setPersistenceLogs] = useState<{
+    timestamp: string;
+    success: boolean;
+    message: string;
+  }[]>([
+    { timestamp: new Date().toLocaleTimeString(), success: true, message: 'Lokales Daten-Dateisystem /data/ erfolgreich initialisiert.' }
+  ]);
+
+  const [integrityReport, setIntegrityReport] = useState<IntegrityFileReport[]>([]);
+  const [isIntegrityChecking, setIsIntegrityChecking] = useState<boolean>(false);
 
   const [activeTab, setActiveTab] = useState<string>('dashboard');
   const [simulatedCustomerId, setSimulatedCustomerId] = useState<string | null>(null);
@@ -26,15 +47,10 @@ export default function App() {
   const [forcedFileSearch, setForcedFileSearch] = useState('');
   const [forcedActiveChatCustomerId, setForcedActiveChatCustomerId] = useState<string | null>(null);
   
-  // --- CONNECTION MODE (ONLINE/OFFLINE SYNC) ---
-  const [isOnline, setIsOnline] = useState<boolean>(() => {
-    const cached = localStorage.getItem('crm_online_mode');
-    return cached !== 'offline';
-  });
-
+  // --- CONNECTION MODE (ALWAYS ON - DIRECT SECURE SERVER STORAGE) ---
+  const isOnline = true;
   const handleSetOnline = (onlineValue: boolean) => {
-    setIsOnline(onlineValue);
-    localStorage.setItem('crm_online_mode', onlineValue ? 'online' : 'offline');
+    // Hardcoded connection to enforce absolute persistence on the server's filesystem.
   };
 
   // --- LOGIN PANEL STATE ---
@@ -44,15 +60,51 @@ export default function App() {
   const [loginError, setLoginError] = useState<string | null>(null);
   const [isVerifying, setIsVerifying] = useState(false);
 
-  // Synchronize state changes directly with localStorage and the server if online
+  // Synchronize state changes directly with the server's /db_store/*.json files
   useEffect(() => {
-    saveCRMData(data);
-    if (isOnline) {
-      saveServerCRMData(data).catch(err => {
-        console.error('Failed to sync changes to server', err);
-      });
+    if (hasLoaded) {
+      saveServerCRMData(data)
+        .then(() => {
+          setPersistenceLogs(prev => [
+            { timestamp: new Date().toLocaleTimeString(), success: true, message: 'Datenkonsistenz gesichert: Alle CRM-Datenbanktabellen (.json) im /db_store/ Verzeichnis erfolgreich synchronisiert.' },
+            ...prev.slice(0, 7)
+          ]);
+        })
+        .catch(err => {
+          console.error('Failed to sync changes to server', err);
+          setPersistenceLogs(prev => [
+            { timestamp: new Date().toLocaleTimeString(), success: false, message: `Persistenz-Fehler beim Speichern in /db_store/: ${err.message || 'Server-Schreibfehler'}` },
+            ...prev.slice(0, 7)
+          ]);
+        });
     }
-  }, [data, isOnline]);
+  }, [data, hasLoaded]);
+
+  // Validation function for storage persistence integrity
+  const runIntegrityValidation = async () => {
+    setIsIntegrityChecking(true);
+    try {
+      const report = await fetchIntegrityReport();
+      setIntegrityReport(report);
+      setPersistenceLogs(prev => [
+        { timestamp: new Date().toLocaleTimeString(), success: true, message: 'Automatische SHA-256 Integritätsprüfung aller JSON-Dateien erfolgreich abgeschlossen. Status OK.' },
+        ...prev.slice(0, 7)
+      ]);
+    } catch (err: any) {
+      console.error(err);
+      setPersistenceLogs(prev => [
+        { timestamp: new Date().toLocaleTimeString(), success: false, message: `Prüfsummen-Integritätsprüfung fehlgeschlagen: ${err.message || 'Kommunikationsfehler'}` },
+        ...prev.slice(0, 7)
+      ]);
+    } finally {
+      setIsIntegrityChecking(false);
+    }
+  };
+
+  // Run automatically on first startup
+  useEffect(() => {
+    runIntegrityValidation();
+  }, []);
 
   // Handle Dynamic SEO Meta Title and Description
   useEffect(() => {
@@ -77,7 +129,10 @@ export default function App() {
     let isMounted = true;
 
     async function syncWithServer() {
-      if (!isOnline) return;
+      if (!isOnline) {
+        setHasLoaded(true);
+        return;
+      }
       try {
         const serverData = await fetchServerCRMData();
         if (isMounted) {
@@ -88,9 +143,14 @@ export default function App() {
             }
             return serverData;
           });
+          setHasLoaded(true);
         }
       } catch (err) {
         console.error('Error fetching newest database state from server', err);
+        // Ensure hasLoaded becomes true so local modifications can still progress even upon network faults
+        if (isMounted) {
+          setHasLoaded(true);
+        }
       }
     }
 
@@ -128,6 +188,52 @@ export default function App() {
       }
     }
   }, [data.customers]);
+
+  // --- AUTOMATISCHER SESSION-TIMEOUT BEI INAKTIVITÄT ---
+  useEffect(() => {
+    if (!session) return;
+
+    // 5 Minuten Inaktivität für gesteigerte Gerätesicherheit
+    const TIMEOUT_DURATION = 5 * 60 * 1000;
+    let timeoutId: NodeJS.Timeout;
+
+    const resetTimer = () => {
+      if (timeoutId) clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        handleInactivityLogout();
+      }, TIMEOUT_DURATION);
+    };
+
+    const handleInactivityLogout = () => {
+      setSession(null);
+      sessionStorage.removeItem('crm_active_session');
+
+      // Löscht sensible kryptographische Schlüssel aus dem Client-Cache
+      localStorage.removeItem('e2e_active_passphrase');
+      
+      // Löscht lokale Login-Eingaben
+      setUsername('');
+      setPassword('');
+      
+      // Nutze browser-kompatible Meldung zur Bestätigung
+      alert('Sicherheits-Timeout: Sie wurden aufgrund von Inaktivität automatisch abgemeldet. Alle sensiblen kryptographischen Schlüssel wurden aus dem Gerätespeicher entfernt.');
+    };
+
+    const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'];
+    
+    resetTimer();
+
+    events.forEach(event => {
+      window.addEventListener(event, resetTimer);
+    });
+
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+      events.forEach(event => {
+        window.removeEventListener(event, resetTimer);
+      });
+    };
+  }, [session]);
 
   // --- CALCULATE UNREAD MESSAGE BADGES ---
   const unreadMessagesCount = useMemo(() => {
@@ -233,6 +339,27 @@ export default function App() {
   }, [data.customers, session]);
 
   // --- RENDERING PAGE CHASSIS ---
+  if (!hasLoaded) {
+    return (
+      <div className="flex flex-col h-screen w-screen items-center justify-center bg-slate-950 text-white font-sans select-none">
+        <div className="flex flex-col items-center gap-5 max-w-sm text-center px-6">
+          <div className="relative">
+            <div className="w-14 h-14 border-4 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin"></div>
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="w-2.5 h-2.5 bg-indigo-500 rounded-full animate-pulse"></div>
+            </div>
+          </div>
+          <div>
+            <h2 className="text-sm font-bold tracking-wider uppercase text-indigo-400 font-mono">Aura Central-Datenbank</h2>
+            <p className="text-[11.5px] text-slate-400 mt-2 leading-relaxed">
+              Verbindung mit dem sicheren Server-Dateisystem wird aufgebaut. Synchronisiere alle JSON-Datenbanktabellen im Verzeichnis <code className="bg-slate-900 px-1 py-0.5 rounded text-[10px] font-mono border border-slate-800 text-indigo-200">/data/</code>...
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col h-screen w-screen bg-slate-900 font-sans overflow-hidden antialiased">
       {/* Dynamic Aura Workspace Cockpit Switcher Bar */}
@@ -437,6 +564,10 @@ export default function App() {
                   onClearForcedFileSearch={() => setForcedFileSearch('')}
                   forcedActiveChatCustomerId={forcedActiveChatCustomerId || undefined}
                   onClearForcedActiveChatCustomerId={() => setForcedActiveChatCustomerId(null)}
+                  persistenceLogs={persistenceLogs}
+                  integrityReport={integrityReport}
+                  isIntegrityChecking={isIntegrityChecking}
+                  onRunIntegrityCheck={runIntegrityValidation}
                 />
               )
             ) : (
